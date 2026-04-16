@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -32,6 +33,14 @@ NUMERIC_FEATURES = [
     "team_gold_diff",
     "team_level_diff",
 ]
+
+
+@dataclass(frozen=True)
+class PredictionArtifacts:
+    metadata: dict
+    model: Model
+    prior: sparse.csr_matrix
+    item_catalog: dict[str, dict] | None
 
 
 def train_model(dataset_path: Path, model_dir: Path, epochs: int = 30, batch_size: int = 256) -> dict:
@@ -215,18 +224,38 @@ def build_inventory_prior(dataframe: pd.DataFrame, metadata: dict) -> sparse.csr
     return matrix
 
 
-def predict_live_snapshot(snapshot: dict, role: str, model_dir: Path, top_k: int = 5) -> dict:
+def load_prediction_artifacts(model_dir: Path) -> PredictionArtifacts:
     metadata_path = model_dir / METADATA_FILENAME
     model_path = model_dir / MODEL_FILENAME
     prior_path = model_dir / PRIOR_FILENAME
 
     with metadata_path.open("r", encoding="utf-8") as handle:
         metadata = json.load(handle)
-    model = models.load_model(model_path)
-    prior = sparse.load_npz(prior_path)
-
     settings = Settings.from_env()
-    item_catalog = load_item_catalog(settings.item_catalog_path)
+    return PredictionArtifacts(
+        metadata=metadata,
+        model=models.load_model(model_path),
+        prior=sparse.load_npz(prior_path),
+        item_catalog=load_item_catalog(settings.item_catalog_path),
+    )
+
+
+def predict_live_snapshot(
+    snapshot: dict,
+    role: str,
+    model_dir: Path | None = None,
+    top_k: int = 5,
+    artifacts: PredictionArtifacts | None = None,
+) -> dict:
+    if artifacts is None:
+        if model_dir is None:
+            raise ValueError("model_dir is required when prediction artifacts are not preloaded.")
+        artifacts = load_prediction_artifacts(model_dir)
+
+    metadata = artifacts.metadata
+    model = artifacts.model
+    prior = artifacts.prior
+    item_catalog = artifacts.item_catalog
 
     row = live_snapshot_to_row(snapshot, role, item_catalog)
     encoded = encode_dataframe(pd.DataFrame([row]), metadata)

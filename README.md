@@ -107,6 +107,12 @@ Predict from the current live game:
 python main.py predict-live --role BOTTOM --top-k 5
 ```
 
+Keep refreshing live recommendations every 10 seconds:
+
+```bash
+python main.py predict-live --role BOTTOM --top-k 5 --watch --interval 10
+```
+
 The live predictor expects you to provide your role because the local Live Client API does not reliably expose lane/role information for the active player.
 
 `python main.py live` now behaves like a monitor:

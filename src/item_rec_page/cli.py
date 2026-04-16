@@ -59,6 +59,13 @@ def build_parser() -> argparse.ArgumentParser:
     predict_parser.add_argument("--model-dir", default=str(settings.model_dir))
     predict_parser.add_argument("--top-k", type=int, default=5)
     predict_parser.add_argument(
+        "--watch",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Keep printing refreshed recommendations while a live game is active.",
+    )
+    predict_parser.add_argument("--interval", type=float, default=10.0, help="Seconds between predictions in watch mode.")
+    predict_parser.add_argument(
         "--wait",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -245,9 +252,43 @@ def run_train_command(args: argparse.Namespace) -> None:
 
 
 def run_predict_live_command(args: argparse.Namespace) -> None:
-    from item_rec_page.modeling import predict_live_snapshot
+    from item_rec_page.modeling import load_prediction_artifacts, predict_live_snapshot
 
     client = LiveClient()
+    artifacts = load_prediction_artifacts(Path(args.model_dir))
+
+    if args.watch:
+        print("Watching live recommendations. Press Ctrl+C to stop.")
+        availability_state: bool | None = None
+        try:
+            while True:
+                try:
+                    snapshot = client.get_live_snapshot()
+                    if availability_state is not True:
+                        print("Live Client detected.")
+                    availability_state = True
+                    predictions = predict_live_snapshot(
+                        snapshot=snapshot,
+                        role=args.role,
+                        top_k=args.top_k,
+                        artifacts=artifacts,
+                    )
+                    print_json(predictions)
+                    time.sleep(args.interval)
+                except LiveClientError as exc:
+                    if not args.wait:
+                        print(str(exc))
+                        return
+                    if availability_state is True:
+                        print("Live Client unavailable. Waiting for the next active game...")
+                    elif availability_state is None:
+                        print("Live Client not detected yet. Waiting...")
+                    availability_state = False
+                    time.sleep(args.poll_interval)
+        except KeyboardInterrupt:
+            print("Stopped live prediction watch.")
+        return
+
     try:
         if args.wait:
             snapshot = wait_for_live_snapshot(client, args.poll_interval)
@@ -263,8 +304,8 @@ def run_predict_live_command(args: argparse.Namespace) -> None:
     predictions = predict_live_snapshot(
         snapshot=snapshot,
         role=args.role,
-        model_dir=Path(args.model_dir),
         top_k=args.top_k,
+        artifacts=artifacts,
     )
     print_json(predictions)
 
