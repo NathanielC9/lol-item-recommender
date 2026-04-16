@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from model_utils import load_pipeline, predict_next_item
 from dotenv import load_dotenv
 load_dotenv()
