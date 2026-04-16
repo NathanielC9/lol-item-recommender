@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string
 import os
-from model_utils import load_pipeline, predict_next_item
+from app.model_utils import load_pipeline, predict_next_item
 from dotenv import load_dotenv
 load_dotenv()
 
