@@ -4,6 +4,7 @@ import numpy as np
 from preprocessing.encode import load_encoders, encode_row
 import torch
 import torch.nn as nn
+from utils.item_names import get_item_name
 
 class MLP(nn.Module):
     def __init__(self, in_dim, out_dim):
@@ -49,10 +50,9 @@ def predict_next_item(pipeline, raw_row):
         classes = meta["classes"]
 
     top3_idx = np.argsort(probs)[-3:][::-1]
-    top1 = classes[top3_idx[0]]
-    top3 = [{"item": classes[i], "prob": round(float(probs[i]), 4)} for i in top3_idx]
+    top1 = get_item_name(classes[top3_idx[0]])
+    top3 = [{"item": get_item_name(classes[i]), "prob": round(float(probs[i]), 4)} for i in top3_idx]
     return top1, top3
-
 def softmax(x):
     e = np.exp(x - np.max(x))
     return e / e.sum()
