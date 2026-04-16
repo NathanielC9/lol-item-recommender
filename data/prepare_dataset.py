@@ -12,7 +12,7 @@ def time_bucket(duration_seconds):
     return "late"
 
 def main():
-    df = pd.read_csv(RAW)
+    df = pd.read_csv(RAW, encoding="latin-1")
 
     rows = []
     for _, r in df.iterrows():
