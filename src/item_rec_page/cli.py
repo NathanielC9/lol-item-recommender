@@ -6,9 +6,9 @@ import time
 from pathlib import Path
 
 from item_rec_page.config import Settings
-from item_rec_page.dataset import CollectionConfig, collect_training_examples
+from item_rec_page.dataset import CollectionConfig, CollectionStats, collect_training_examples
 from item_rec_page.live_client import LiveClient, LiveClientError
-from item_rec_page.riot_api import RiotApiClient, save_item_catalog
+from item_rec_page.riot_api import RiotApiClient, RiotApiError, save_item_catalog
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -76,6 +76,34 @@ def print_json(payload: dict, pretty: bool = True) -> None:
         print(json.dumps(payload))
 
 
+def diagnose_collection(stats: CollectionStats, rows_written: int) -> str | None:
+    if rows_written > 0:
+        return None
+    if stats.seed_players_seen == 0:
+        return "The seeding endpoints returned no usable players for the requested queue."
+    if stats.summoner_name_fallback_successes > 0 and stats.players_with_puuid > 0:
+        return "Some PUUIDs were recovered through Riot's deprecated summoner-name lookup, but later stages still produced no rows."
+    if stats.players_with_puuid == 0:
+        if stats.summoner_name_fallback_attempts > 0:
+            return "Seed players were fetched, but neither summoner-ID lookup nor the summoner-name fallback returned a PUUID."
+        return "Seed players were fetched, but none resolved to a PUUID. Riot's summoner lookup may have changed or returned incomplete data."
+    if stats.candidate_match_ids_seen == 0:
+        return "Sampled players resolved correctly, but Riot returned no recent matches for them."
+    if stats.queue_matched_matches == 0 and stats.matches_skipped_wrong_queue > 0:
+        return "Recent matches were found, but none matched the requested queue ID. Try a larger sample or confirm the queue settings."
+    if stats.matches_missing_frames > 0 and stats.item_purchase_events_seen == 0:
+        return "Queue-matched matches were fetched, but the timelines had no frames. Riot may be returning incomplete timeline payloads for these matches."
+    if stats.item_purchase_events_seen == 0 and stats.queue_matched_matches > 0:
+        return "Queue-matched timelines were fetched, but no ITEM_PURCHASED events were found."
+    if stats.allowed_item_purchase_events == 0 and stats.item_purchase_events_seen > 0:
+        return "Purchase events were found, but every purchased item was filtered out by the allowed-item rules."
+    if stats.rows_skipped_missing_participant_frame > 0 and stats.allowed_item_purchase_events > 0:
+        return "Allowed purchase events were found, but participant frames were missing at the purchase timestamps."
+    if stats.purchase_events_missing_participant > 0 and stats.item_purchase_events_seen == 0:
+        return "Purchase events were present, but their participant IDs did not line up with the participant map."
+    return "The collector reached queue-matched matches but still produced no rows. The new counters should narrow down which stage is dropping data."
+
+
 def _snapshot_summary(snapshot: dict) -> str:
     active = snapshot["active_player"]
     scores = active.get("scores", {})
@@ -140,11 +168,12 @@ def run_live_command(args: argparse.Namespace) -> None:
 
 
 def run_collect_command(args: argparse.Namespace) -> None:
-    if not args.api_key:
+    api_key = args.api_key.strip() if isinstance(args.api_key, str) else args.api_key
+    if not api_key:
         raise SystemExit("Missing Riot API key. Set RIOT_API_KEY or pass --api-key.")
 
     settings = Settings.from_env(
-        riot_api_key=args.api_key,
+        riot_api_key=api_key,
         platform=args.platform,
         region=args.region,
     )
@@ -155,25 +184,50 @@ def run_collect_command(args: argparse.Namespace) -> None:
         platform=settings.platform,
         region=settings.region,
     )
-    item_catalog = client.get_item_catalog()
-    save_item_catalog(item_catalog, settings.item_catalog_path)
+    try:
+        item_catalog = client.get_item_catalog()
+        save_item_catalog(item_catalog, settings.item_catalog_path)
 
-    config = CollectionConfig(
-        queue=args.queue,
-        queue_id=args.queue_id,
-        max_seed_players=args.max_players,
-        matches_per_player=args.matches_per_player,
-        max_matches=args.max_matches,
-        output_path=Path(args.output),
-        item_catalog=item_catalog,
-    )
-    dataframe = collect_training_examples(client, config)
+        config = CollectionConfig(
+            queue=args.queue,
+            queue_id=args.queue_id,
+            max_seed_players=args.max_players,
+            matches_per_player=args.matches_per_player,
+            max_matches=args.max_matches,
+            output_path=Path(args.output),
+            item_catalog=item_catalog,
+        )
+        result = collect_training_examples(client, config)
+    except RiotApiError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    dataframe = result.dataframe
+    stats = result.stats
     print_json(
         {
             "rows": int(len(dataframe)),
             "output": str(config.output_path),
             "unique_labels": int(dataframe["label_item_id"].nunique()) if not dataframe.empty else 0,
             "unique_champions": int(dataframe["champion"].nunique()) if not dataframe.empty else 0,
+            "seed_players_seen": stats.seed_players_seen,
+            "entry_puuid_available": stats.entry_puuid_available,
+            "summoner_lookup_missing_puuid": stats.summoner_lookup_missing_puuid,
+            "summoner_name_fallback_attempts": stats.summoner_name_fallback_attempts,
+            "summoner_name_fallback_successes": stats.summoner_name_fallback_successes,
+            "players_with_puuid": stats.players_with_puuid,
+            "players_with_ranked_matches": stats.players_with_ranked_matches,
+            "candidate_match_ids_seen": stats.candidate_match_ids_seen,
+            "unique_matches_seen": stats.unique_matches_seen,
+            "queue_matched_matches": stats.queue_matched_matches,
+            "matches_skipped_wrong_queue": stats.matches_skipped_wrong_queue,
+            "matches_missing_participants": stats.matches_missing_participants,
+            "matches_missing_frames": stats.matches_missing_frames,
+            "matches_with_rows": stats.matches_with_rows,
+            "item_purchase_events_seen": stats.item_purchase_events_seen,
+            "allowed_item_purchase_events": stats.allowed_item_purchase_events,
+            "purchase_events_missing_participant": stats.purchase_events_missing_participant,
+            "rows_skipped_missing_participant_frame": stats.rows_skipped_missing_participant_frame,
+            "diagnosis": diagnose_collection(stats, int(len(dataframe))),
         }
     )
 

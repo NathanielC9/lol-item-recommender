@@ -21,6 +21,25 @@ ROLE_ALIASES = {
 }
 
 INVENTORY_COLUMNS = [f"inventory_{index}" for index in range(6)]
+DATASET_COLUMNS = [
+    "match_id",
+    "participant_id",
+    "champion",
+    "role",
+    "game_time_seconds",
+    "level",
+    "current_gold",
+    "total_gold",
+    "cs",
+    "jungle_cs",
+    "gold_diff_vs_role",
+    "level_diff_vs_role",
+    "cs_diff_vs_role",
+    "team_gold_diff",
+    "team_level_diff",
+    *INVENTORY_COLUMNS,
+    "label_item_id",
+]
 
 
 @dataclass(frozen=True)
@@ -34,6 +53,46 @@ class CollectionConfig:
     item_catalog: dict[str, dict] | None = None
 
 
+@dataclass
+class MatchExtractionStats:
+    missing_participants: bool = False
+    missing_frames: bool = False
+    purchase_events_seen: int = 0
+    allowed_purchase_events: int = 0
+    purchase_events_missing_participant: int = 0
+    rows_skipped_missing_participant_frame: int = 0
+    rows_built: int = 0
+
+
+@dataclass
+class CollectionStats:
+    seed_players_seen: int = 0
+    entry_puuid_available: int = 0
+    summoner_lookup_missing_puuid: int = 0
+    summoner_name_fallback_attempts: int = 0
+    summoner_name_fallback_successes: int = 0
+    players_with_puuid: int = 0
+    players_with_ranked_matches: int = 0
+    candidate_match_ids_seen: int = 0
+    unique_matches_seen: int = 0
+    queue_matched_matches: int = 0
+    matches_skipped_wrong_queue: int = 0
+    matches_missing_participants: int = 0
+    matches_missing_frames: int = 0
+    matches_with_rows: int = 0
+    item_purchase_events_seen: int = 0
+    allowed_item_purchase_events: int = 0
+    purchase_events_missing_participant: int = 0
+    rows_skipped_missing_participant_frame: int = 0
+    rows_written: int = 0
+
+
+@dataclass(frozen=True)
+class CollectionResult:
+    dataframe: pd.DataFrame
+    stats: CollectionStats
+
+
 def normalize_role(raw_role: str | None) -> str:
     if not raw_role:
         return "UNKNOWN"
@@ -41,61 +100,142 @@ def normalize_role(raw_role: str | None) -> str:
     return ROLE_ALIASES.get(normalized, "UNKNOWN")
 
 
-def collect_training_examples(client: RiotApiClient, config: CollectionConfig) -> pd.DataFrame:
+def collect_training_examples(client: RiotApiClient, config: CollectionConfig) -> CollectionResult:
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
     allowed_items = eligible_training_items(config.item_catalog)
 
     seen_match_ids: set[str] = set()
     collected_rows: list[dict] = []
+    stats = CollectionStats()
 
     for entry in client.iter_diamond_plus_players(config.queue, config.max_seed_players):
-        summoner_id = entry.get("summonerId")
-        if not summoner_id:
-            continue
-
-        summoner = client.get_summoner_by_id(summoner_id)
-        puuid = summoner.get("puuid")
+        stats.seed_players_seen += 1
+        puuid = resolve_entry_puuid(client, entry, stats)
         if not puuid:
             continue
+        stats.players_with_puuid += 1
 
-        match_ids = client.get_match_ids_by_puuid(
-            puuid,
-            start=0,
-            count=config.matches_per_player,
-            queue_id=config.queue_id,
-        )
+        match_ids = get_candidate_match_ids(client, puuid, config)
+        stats.candidate_match_ids_seen += len(match_ids)
+        if match_ids:
+            stats.players_with_ranked_matches += 1
 
+        queue_matches_collected = 0
         for match_id in match_ids:
             if match_id in seen_match_ids:
                 continue
-            seen_match_ids.add(match_id)
 
             match = client.get_match(match_id)
+            if int(match.get("info", {}).get("queueId", -1)) != config.queue_id:
+                stats.matches_skipped_wrong_queue += 1
+                continue
+
+            queue_matches_collected += 1
+            seen_match_ids.add(match_id)
+            stats.unique_matches_seen += 1
+            stats.queue_matched_matches += 1
+
             timeline = client.get_timeline(match_id)
-            collected_rows.extend(extract_examples_from_match(match, timeline, allowed_items))
+            match_rows, match_stats = extract_examples_from_match(match, timeline, allowed_items)
+            collected_rows.extend(match_rows)
+            if match_stats.missing_participants:
+                stats.matches_missing_participants += 1
+            if match_stats.missing_frames:
+                stats.matches_missing_frames += 1
+            stats.item_purchase_events_seen += match_stats.purchase_events_seen
+            stats.allowed_item_purchase_events += match_stats.allowed_purchase_events
+            stats.purchase_events_missing_participant += match_stats.purchase_events_missing_participant
+            stats.rows_skipped_missing_participant_frame += match_stats.rows_skipped_missing_participant_frame
+            if match_stats.rows_built > 0:
+                stats.matches_with_rows += 1
 
             if len(seen_match_ids) >= config.max_matches:
-                dataframe = pd.DataFrame(collected_rows)
-                dataframe.to_csv(config.output_path, index=False)
-                return dataframe
+                return finalize_collection(collected_rows, config.output_path, stats)
 
-    dataframe = pd.DataFrame(collected_rows)
-    dataframe.to_csv(config.output_path, index=False)
-    return dataframe
+            if queue_matches_collected >= config.matches_per_player:
+                break
+
+    return finalize_collection(collected_rows, config.output_path, stats)
+
+
+def resolve_entry_puuid(client: RiotApiClient, entry: dict, stats: CollectionStats) -> str | None:
+    entry_puuid = entry.get("puuid")
+    if entry_puuid:
+        stats.entry_puuid_available += 1
+        return str(entry_puuid)
+
+    summoner_id = entry.get("summonerId")
+    summoner_name = entry.get("summonerName")
+
+    summoner: dict = {}
+    if summoner_id:
+        summoner = client.get_summoner_by_id(str(summoner_id))
+        puuid = summoner.get("puuid")
+        if puuid:
+            return str(puuid)
+        stats.summoner_lookup_missing_puuid += 1
+
+    if summoner_name:
+        stats.summoner_name_fallback_attempts += 1
+        summoner = client.get_summoner_by_name(str(summoner_name))
+        puuid = summoner.get("puuid")
+        if puuid:
+            stats.summoner_name_fallback_successes += 1
+            return str(puuid)
+
+    return None
+
+
+def get_candidate_match_ids(client: RiotApiClient, puuid: str, config: CollectionConfig) -> list[str]:
+    primary_match_ids = client.get_match_ids_by_puuid(
+        puuid,
+        start=0,
+        count=config.matches_per_player,
+        queue_id=config.queue_id,
+    )
+    if len(primary_match_ids) >= config.matches_per_player:
+        return primary_match_ids
+
+    fallback_count = min(max(config.matches_per_player * 5, 20), 100)
+    fallback_match_ids = client.get_match_ids_by_puuid(
+        puuid,
+        start=0,
+        count=fallback_count,
+        queue_id=None,
+    )
+
+    merged: list[str] = []
+    seen_ids: set[str] = set()
+    for match_id in primary_match_ids + fallback_match_ids:
+        if match_id in seen_ids:
+            continue
+        seen_ids.add(match_id)
+        merged.append(match_id)
+    return merged
+
+
+def finalize_collection(rows: list[dict], output_path: Path, stats: CollectionStats) -> CollectionResult:
+    dataframe = pd.DataFrame(rows, columns=DATASET_COLUMNS)
+    stats.rows_written = int(len(dataframe))
+    dataframe.to_csv(output_path, index=False)
+    return CollectionResult(dataframe=dataframe, stats=stats)
 
 
 def extract_examples_from_match(
     match_payload: dict,
     timeline_payload: dict,
     allowed_items: set[str] | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], MatchExtractionStats]:
     info = match_payload.get("info", {})
     timeline_info = timeline_payload.get("info", {})
     participants = info.get("participants", [])
     frames = timeline_info.get("frames", [])
 
     if not participants or not frames:
-        return []
+        return [], MatchExtractionStats(
+            missing_participants=not bool(participants),
+            missing_frames=not bool(frames),
+        )
 
     match_id = match_payload.get("metadata", {}).get("matchId")
     participant_map = {int(participant["participantId"]): participant for participant in participants}
@@ -108,25 +248,36 @@ def extract_examples_from_match(
     inventories = {participant_id: [] for participant_id in participant_map}
 
     rows: list[dict] = []
+    stats = MatchExtractionStats()
     all_events = []
     for frame in frames:
         all_events.extend(frame.get("events", []))
     all_events.sort(key=lambda event: int(event.get("timestamp", 0)))
 
     for event in all_events:
-        participant_id = event.get("participantId")
+        raw_participant_id = event.get("participantId")
+        try:
+            participant_id = int(raw_participant_id)
+        except (TypeError, ValueError):
+            if event.get("type") == "ITEM_PURCHASED":
+                stats.purchase_events_missing_participant += 1
+            continue
         if participant_id not in participant_map:
+            if event.get("type") == "ITEM_PURCHASED":
+                stats.purchase_events_missing_participant += 1
             continue
 
         event_type = event.get("type")
         if event_type == "ITEM_PURCHASED":
+            stats.purchase_events_seen += 1
             item_id = int(event.get("itemId", 0))
             if item_id <= 0:
                 continue
 
             if allowed_items is None or str(item_id) in allowed_items:
+                stats.allowed_purchase_events += 1
                 frame = find_frame_for_timestamp(frames, frame_timestamps, int(event.get("timestamp", 0)))
-                row = build_training_row(
+                row, missing_participant_frame = build_training_row(
                     match_id=match_id,
                     event_timestamp=int(event.get("timestamp", 0)),
                     participant=participant_map[participant_id],
@@ -135,9 +286,12 @@ def extract_examples_from_match(
                     team_lookup=team_lookup,
                     inventory=inventories[participant_id],
                 )
+                if missing_participant_frame:
+                    stats.rows_skipped_missing_participant_frame += 1
                 if row is not None:
                     row["label_item_id"] = str(item_id)
                     rows.append(row)
+                    stats.rows_built += 1
 
             add_item(inventories[participant_id], item_id)
         elif event_type in {"ITEM_DESTROYED", "ITEM_SOLD"}:
@@ -150,7 +304,7 @@ def extract_examples_from_match(
             if before_id > 0:
                 add_item(inventories[participant_id], before_id)
 
-    return rows
+    return rows, stats
 
 
 def build_role_opponent_map(participants: list[dict]) -> dict[int, int]:
@@ -190,11 +344,11 @@ def build_training_row(
     opponent_id: int | None,
     team_lookup: dict[int, int],
     inventory: list[int],
-) -> dict | None:
+) -> tuple[dict | None, bool]:
     participant_frames = frame.get("participantFrames", {})
     participant_frame = participant_frames.get(str(participant["participantId"])) or participant_frames.get(participant["participantId"])
     if not participant_frame:
-        return None
+        return None, True
 
     team_id = int(participant["teamId"])
     participant_id = int(participant["participantId"])
@@ -238,7 +392,7 @@ def build_training_row(
     for column, value in zip(INVENTORY_COLUMNS, inventory_snapshot):
         row[column] = str(value)
 
-    return row
+    return row, False
 
 
 def aggregate_team_state(participant_frames: dict, team_lookup: dict[int, int], team_id: int) -> tuple[float, float]:

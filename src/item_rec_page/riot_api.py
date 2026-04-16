@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import quote
 
 import requests
 
@@ -23,11 +24,11 @@ class RiotApiError(RuntimeError):
 
 class RiotApiClient:
     def __init__(self, api_key: str, platform: str, region: str) -> None:
-        self.api_key = api_key
+        self.api_key = api_key.strip()
         self.platform = platform.lower()
         self.region = region.lower()
         self.session = requests.Session()
-        self.session.headers.update({"X-Riot-Token": api_key})
+        self.session.headers.update({"X-Riot-Token": self.api_key})
 
     @property
     def platform_base(self) -> str:
@@ -41,6 +42,12 @@ class RiotApiClient:
         headers = self.session.headers if use_auth else None
         response = self.session.get(url, params=params, headers=headers, timeout=30)
         if response.status_code >= 400:
+            if response.status_code == 401 and "apikey" in response.text.lower():
+                raise RiotApiError(
+                    "Riot API rejected the API key with 401 Unknown apikey. "
+                    "Riot development keys expire every 24 hours, so generate a fresh key at "
+                    "https://developer.riotgames.com/ and set it in the same shell before retrying."
+                )
             raise RiotApiError(f"Riot API error {response.status_code} for {url}: {response.text[:300]}")
         return response.json()
 
@@ -64,18 +71,18 @@ class RiotApiClient:
 
         for tier in ("CHALLENGER", "GRANDMASTER", "MASTER"):
             for entry in self.get_apex_league(queue, tier):
-                summoner_id = entry.get("summonerId")
-                if summoner_id and summoner_id not in seen_ids:
-                    seen_ids.add(summoner_id)
+                player_id = str(entry.get("puuid") or entry.get("summonerId") or "").strip()
+                if player_id and player_id not in seen_ids:
+                    seen_ids.add(player_id)
                     players.append(entry)
                     if len(players) >= max_players:
                         return players
 
         for division in ("I", "II", "III", "IV"):
             for entry in self.get_league_entries(queue, "DIAMOND", division):
-                summoner_id = entry.get("summonerId")
-                if summoner_id and summoner_id not in seen_ids:
-                    seen_ids.add(summoner_id)
+                player_id = str(entry.get("puuid") or entry.get("summonerId") or "").strip()
+                if player_id and player_id not in seen_ids:
+                    seen_ids.add(player_id)
                     players.append(entry)
                     if len(players) >= max_players:
                         return players
@@ -83,7 +90,14 @@ class RiotApiClient:
         return players
 
     def get_summoner_by_id(self, encrypted_summoner_id: str) -> dict:
-        url = f"{self.platform_base}/lol/summoner/v4/summoners/{encrypted_summoner_id}"
+        encoded_id = quote(str(encrypted_summoner_id), safe="")
+        url = f"{self.platform_base}/lol/summoner/v4/summoners/{encoded_id}"
+        payload = self._request_json(url)
+        return payload if isinstance(payload, dict) else {}
+
+    def get_summoner_by_name(self, summoner_name: str) -> dict:
+        encoded_name = quote(str(summoner_name), safe="")
+        url = f"{self.platform_base}/lol/summoner/v4/summoners/by-name/{encoded_name}"
         payload = self._request_json(url)
         return payload if isinstance(payload, dict) else {}
 

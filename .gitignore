@@ -17,3 +17,6 @@ models/*.npz
 .mypy_cache/
 .ruff_cache/
 *.egg-info/
+
+uv.lock
+.riot.env.ps1
