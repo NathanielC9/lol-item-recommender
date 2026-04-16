@@ -59,7 +59,7 @@ for epoch in range(20):
         probs = torch.softmax(logits, dim=1).numpy()
         preds = probs.argmax(axis=1)
         acc1 = (preds == y_test).mean()
-        acc3 = top_k_accuracy_score(y_test, probs, k=3)
+        acc3 = top_k_accuracy_score(y_test, probs, k=3, labels=list(range(out_dim)))
     print(f"Epoch {epoch+1} | Top-1: {acc1:.4f} | Top-3: {acc3:.4f}")
 
 torch.save(model, os.path.join(SAVE, "mlp_model.pt"))
