@@ -2,6 +2,22 @@ import os
 import joblib
 import numpy as np
 from preprocessing.encode import load_encoders, encode_row
+import torch
+import torch.nn as nn
+
+class MLP(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, 256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, out_dim)
+        )
+    def forward(self, x):
+        return self.net(x)
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "saved_models")
 
