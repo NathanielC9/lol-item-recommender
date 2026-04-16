@@ -24,7 +24,7 @@ model.fit(X_train, y_train)
 
 probs = model.predict_proba(X_test)
 print("Top-1 Accuracy:", accuracy_score(y_test, model.predict(X_test)))
-print("Top-3 Accuracy:", top_k_accuracy_score(y_test, probs, k=3))
+print("Top-3 Accuracy:", top_k_accuracy_score(y_test, probs, k=3, labels=list(range(len(model.classes_)))))
 
 joblib.dump(model, os.path.join(SAVE, "rf_model.joblib"))
 print("Model saved.")
