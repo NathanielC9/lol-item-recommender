@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "item-rec-page"
+version = "0.1.0"
+description = "Local League of Legends item recommendation research tool built on Riot APIs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "keras>=3.4.1",
+  "numpy>=1.26.4",
+  "pandas>=2.2.2",
+  "requests>=2.32.3",
+  "scikit-learn>=1.5.1",
+  "scipy>=1.13.1",
+  "tensorflow>=2.16.1",
+]
+
+[project.scripts]
+item-rec = "item_rec_page.cli:main"
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["item_rec_page*"]
