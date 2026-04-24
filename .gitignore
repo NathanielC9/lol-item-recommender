@@ -1,1 +1,10 @@
 saved_models/
+data/decision_points.csv
+data/raw_data.csv
+data/MatchStatsTbl.csv
+data/SummonerMatchTbl.csv
+data/TeamMatchTbl.csv
+data/MatchTbl.csv
+data/ChampionTbl.csv
+data/ItemTbl.csv
+data/RankTbl.csv
