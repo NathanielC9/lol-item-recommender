@@ -4,6 +4,16 @@ import os
 DATA = "data/"
 OUT = "data/decision_points.csv"
 
+EXCLUDE = {
+    "Health Potion", "Total Biscuit of Everlasting Will",
+    "World Atlas", "Stealth Ward", "Control Ward",
+    "Elixir of Iron", "Elixir of Sorcery", "Elixir of Wrath",
+    "Oracle Lens", "Farsight Alteration",
+    "Doran's Shield", "Doran's Blade", "Doran's Ring",
+    "Dark Seal", "Cull", "Gustwalker Hatchling",
+    "Mosstomper Seedling", "Scorchclaw Pup"
+}
+
 def time_bucket(seconds):
     if seconds < 1200:
         return "early"
@@ -19,14 +29,21 @@ def main():
     champion_tbl = pd.read_csv(DATA + "ChampionTbl.csv")
     item_tbl = pd.read_csv(DATA + "ItemTbl.csv")
     team_match = pd.read_csv(DATA + "TeamMatchTbl.csv")
+    rank_tbl = pd.read_csv(DATA + "RankTbl.csv")
 
     print("Building lookups...")
     champ_lookup = dict(zip(champion_tbl["ChampionId"], champion_tbl["ChampionName"]))
     item_lookup = dict(zip(item_tbl["ItemID"], item_tbl["ItemName"]))
     duration_lookup = dict(zip(match_tbl["MatchId"], match_tbl["GameDuration"]))
 
+    print("QueueType values:")
+    print(match_tbl["QueueType"].value_counts(dropna=False).head(30))
+
+    # TEMP: use all matches until we know exact ranked queue labels
+    ranked_match_ids = set(match_tbl["MatchId"])
+    print(f"Matches used: {len(ranked_match_ids)}")
+
     print("Merging tables...")
-    #link match stats to summoner match to get champion and match FK
     merged = match_stats.merge(
         summoner_match,
         left_on="SummonerMatchFk",
@@ -34,16 +51,15 @@ def main():
         how="left"
     )
 
-    #add game duration
+    merged = merged[merged["MatchFk"].isin(ranked_match_ids)]
+    print(f"Rows after ranked filter: {len(merged)}")
+
     merged["GameDuration"] = merged["MatchFk"].map(duration_lookup)
     merged["time_bucket"] = merged["GameDuration"].apply(
         lambda x: time_bucket(x) if pd.notna(x) else "mid"
     )
-
-    #resolve player champion name
     merged["champion"] = merged["ChampionFk"].map(champ_lookup)
 
-    #merge team composition
     merged = merged.merge(
         team_match,
         left_on="MatchFk",
@@ -54,7 +70,6 @@ def main():
     print("Building decision points...")
     rows = []
     for _, r in merged.iterrows():
-        #get items, filter out nulls and zeros
         items = []
         for col in ["item1", "item2", "item3", "item4", "item5", "item6"]:
             val = r.get(col)
@@ -62,20 +77,17 @@ def main():
                 item_name = item_lookup.get(int(val), str(int(val)))
                 items.append(item_name)
 
+        items = [i for i in items if i not in EXCLUDE]
         if not items:
             continue
 
-        #determine enemy team based on which team the player is on
-        #TeamMatchTbl has B1-B5 and R1-R5
-        #We use EnemyChampionFk to figure out which side player is on
-        blue_champs = [
-            champ_lookup.get(r.get(f"B{i}Champ"), "None") for i in range(1, 6)
-        ]
-        red_champs = [
-            champ_lookup.get(r.get(f"R{i}Champ"), "None") for i in range(1, 6)
-        ]
-
         player_champ = r.get("champion")
+        if pd.isna(player_champ):
+            continue
+
+        blue_champs = [champ_lookup.get(r.get(f"B{i}Champ"), "None") for i in range(1, 6)]
+        red_champs = [champ_lookup.get(r.get(f"R{i}Champ"), "None") for i in range(1, 6)]
+
         if player_champ in blue_champs:
             enemy_champs = red_champs
         else:
@@ -85,6 +97,8 @@ def main():
         gold = float(r.get("TotalGold", 0))
         win = int(r.get("Win", 0))
         lane = str(r.get("Lane", "NONE"))
+        cs = float(r.get("MinionsKilled", 0))
+        vision = float(r.get("visionScore", 0))
 
         for item in items:
             rows.append({
@@ -94,6 +108,8 @@ def main():
                 "kda": kda,
                 "gold": gold,
                 "win": win,
+                "cs": cs,
+                "vision": vision,
                 "enemy_1": enemy_champs[0] if len(enemy_champs) > 0 else "None",
                 "enemy_2": enemy_champs[1] if len(enemy_champs) > 1 else "None",
                 "enemy_3": enemy_champs[2] if len(enemy_champs) > 2 else "None",
@@ -102,9 +118,17 @@ def main():
                 "label_item": item
             })
 
+    print(f"Built {len(rows)} rows before balancing...")
     out = pd.DataFrame(rows)
+
+    balanced = []
+    for item_name, group in out.groupby("label_item"):
+        balanced.append(group.sample(min(len(group), 15000), random_state=42))
+
+    out = pd.concat(balanced).reset_index(drop=True)
     out.to_csv(OUT, index=False)
     print(f"Saved {len(out)} rows to {OUT}")
+    print("Columns:", out.columns.tolist())
 
 if __name__ == "__main__":
     main()

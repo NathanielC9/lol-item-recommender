@@ -1,58 +1,152 @@
+# app/model_utils.py
+
 import os
 import joblib
 import numpy as np
-from preprocessing.encode import load_encoders, encode_row
 import torch
 import torch.nn as nn
+
+from preprocessing.encode import load_encoders, encode_row
 from utils.item_names import get_item_name
+from utils.game_logic import (
+    is_valid_item_for_role,
+    item_bonus,
+    explain_item
+)
+
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "saved_models")
+
 
 class MLP(nn.Module):
     def __init__(self, in_dim, out_dim):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(in_dim, 256),
+            nn.Linear(in_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, out_dim)
         )
+
     def forward(self, x):
         return self.net(x)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "saved_models")
 
 def load_pipeline():
     encoders = load_encoders(os.path.join(MODEL_PATH, "encoders.joblib"))
-    for m in ["mlp_model.pt", "rf_model.joblib"]:
-        p = os.path.join(MODEL_PATH, m)
-        if os.path.exists(p):
-            return {"encoders": encoders, "model_path": p}
+
+    scaler_path = os.path.join(MODEL_PATH, "scaler.joblib")
+    scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+
+    for model_name in ["mlp_model.pt", "rf_model.joblib"]:
+        model_path = os.path.join(MODEL_PATH, model_name)
+        if os.path.exists(model_path):
+            return {
+                "encoders": encoders,
+                "model_path": model_path,
+                "scaler": scaler
+            }
+
     raise FileNotFoundError("No trained model found in saved_models/")
 
-def predict_next_item(pipeline, raw_row):
-    enc = pipeline["encoders"]
-    X = encode_row(raw_row, enc)
+
+def _load_model_predictions(pipeline, X):
     model_path = pipeline["model_path"]
 
     if model_path.endswith(".joblib"):
         model = joblib.load(model_path)
         probs = model.predict_proba([X])[0]
         classes = model.classes_
-    else:
-        import torch
-        meta = joblib.load(os.path.join(os.path.dirname(model_path), "mlp_meta.joblib"))
-        model = torch.load(model_path, map_location="cpu")
-        model.eval()
-        with torch.no_grad():
-            logits = model(torch.tensor(X, dtype=torch.float32).unsqueeze(0))
-            probs = torch.softmax(logits, dim=1).squeeze(0).numpy()
-        classes = meta["classes"]
+        return classes, probs
 
-    top3_idx = np.argsort(probs)[-3:][::-1]
-    top1 = get_item_name(classes[top3_idx[0]])
-    top3 = [{"item": get_item_name(classes[i]), "prob": round(float(probs[i]), 4)} for i in top3_idx]
-    return top1, top3
-def softmax(x):
-    e = np.exp(x - np.max(x))
-    return e / e.sum()
+    meta = joblib.load(os.path.join(os.path.dirname(model_path), "mlp_meta.joblib"))
+    model = torch.load(model_path, map_location="cpu")
+    model.eval()
+
+    with torch.no_grad():
+        logits = model(torch.tensor(X, dtype=torch.float32).unsqueeze(0))
+        probs = torch.softmax(logits, dim=1).squeeze(0).numpy()
+
+    classes = np.array(meta["classes"])
+    return classes, probs
+
+
+def _rerank_items(classes, probs, raw_row, top_n_pool=40):
+    champion = raw_row.get("champion", "")
+
+    ranked_idx = np.argsort(probs)[::-1]
+    candidates = []
+
+    for idx in ranked_idx[:top_n_pool]:
+        item_id = classes[idx]
+        item_name = get_item_name(item_id)
+
+        if not is_valid_item_for_role(item_name, champion):
+            continue
+
+        original_prob = float(probs[idx])
+        bonus = item_bonus(item_name, raw_row)
+        final_score = original_prob + bonus
+
+        candidates.append({
+            "item_id": item_id,
+            "item": item_name,
+            "model_prob": original_prob,
+            "rule_bonus": round(bonus, 4),
+            "final_score": final_score,
+            "reason": explain_item(item_name, raw_row)
+        })
+
+    if not candidates:
+        for idx in ranked_idx[:3]:
+            item_id = classes[idx]
+            item_name = get_item_name(item_id)
+            candidates.append({
+                "item_id": item_id,
+                "item": item_name,
+                "model_prob": float(probs[idx]),
+                "rule_bonus": 0.0,
+                "final_score": float(probs[idx]),
+                "reason": explain_item(item_name, raw_row)
+            })
+
+    candidates = sorted(candidates, key=lambda x: x["final_score"], reverse=True)
+
+    total = sum(max(c["final_score"], 0.0) for c in candidates[:3])
+    if total <= 0:
+        total = 1.0
+
+    top3 = []
+    for c in candidates[:3]:
+        top3.append({
+            "item": c["item"],
+            "prob": round(c["model_prob"], 4),
+            "adjusted_score": round(c["final_score"], 4),
+            "rule_bonus": c["rule_bonus"],
+            "reason": c["reason"]
+        })
+
+    return top3
+
+
+def predict_next_item(pipeline, raw_row):
+    encoders = pipeline["encoders"]
+
+    X = encode_row(raw_row, encoders)
+
+    if pipeline.get("scaler"):
+        X = pipeline["scaler"].transform([X])[0]
+
+    classes, probs = _load_model_predictions(pipeline, X)
+
+    top3 = _rerank_items(classes, probs, raw_row)
+
+    prediction = top3[0]["item"]
+
+    return prediction, top3

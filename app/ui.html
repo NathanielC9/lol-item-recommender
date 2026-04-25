@@ -1,71 +1,390 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <title>LoL Item Recommender</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #0a0a0a; color: #c8aa6e; }
-    h2 { color: #c8aa6e; }
-    input, select { width: 100%; padding: 8px; margin: 6px 0 14px; background: #1a1a2e; color: white; border: 1px solid #c8aa6e; border-radius: 4px; }
-    button { background: #c8aa6e; color: black; padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    pre { background: #1a1a2e; padding: 16px; border-radius: 4px; color: #00ff88; margin-top: 20px; }
-    label { font-size: 13px; color: #aaa; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoL Item Recommender</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:#0a0a0f;
+    color:white;
+}
+
+.hero{
+    background:linear-gradient(135deg,#7F77DD,#D85A30);
+    padding:30px;
+    text-align:center;
+}
+
+.hero h1{
+    font-size:32px;
+    margin-bottom:8px;
+}
+
+.hero p{
+    font-size:14px;
+    opacity:0.9;
+}
+
+.container{
+    max-width:950px;
+    margin:auto;
+    padding:25px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+    margin-bottom:15px;
+}
+
+.field{
+    display:flex;
+    flex-direction:column;
+}
+
+.field label{
+    font-size:12px;
+    color:#999;
+    margin-bottom:6px;
+    text-transform:uppercase;
+}
+
+.field input,
+.field select{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #333;
+    background:#16161f;
+    color:white;
+}
+
+.field input:focus,
+.field select:focus{
+    outline:none;
+    border-color:#7F77DD;
+}
+
+.section-title{
+    margin-top:12px;
+    margin-bottom:10px;
+    color:#999;
+    font-size:12px;
+    text-transform:uppercase;
+}
+
+.btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(135deg,#7F77DD,#D85A30);
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+.results{
+    display:none;
+    margin-top:25px;
+}
+
+.card{
+    background:#16161f;
+    border:1px solid #2a2a3a;
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:15px;
+}
+
+.big{
+    font-size:24px;
+    font-weight:bold;
+}
+
+.top3{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:12px;
+}
+
+.item-card{
+    background:#16161f;
+    border:1px solid #2a2a3a;
+    border-radius:12px;
+    padding:14px;
+    text-align:center;
+}
+
+.rank{
+    font-size:12px;
+    color:#999;
+}
+
+.item-name{
+    font-size:15px;
+    font-weight:bold;
+    margin:8px 0;
+}
+
+.bar{
+    height:6px;
+    background:#333;
+    border-radius:5px;
+    overflow:hidden;
+    margin:8px 0;
+}
+
+.fill{
+    height:100%;
+    background:linear-gradient(90deg,#7F77DD,#D85A30);
+}
+
+.small{
+    font-size:12px;
+    color:#aaa;
+    margin-top:6px;
+}
+
+.error{
+    margin-top:20px;
+    background:#311;
+    border:1px solid #633;
+    padding:14px;
+    border-radius:10px;
+    color:#ffaaaa;
+}
+
+@media(max-width:800px){
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    .top3{
+        grid-template-columns:1fr;
+    }
+}
+</style>
 </head>
+
 <body>
-  <h2>⚔️ LoL Item Recommender</h2>
 
-  <label>Champion Name</label>
-  <input id="champion" placeholder="e.g. Jinx">
+<div class="hero">
+    <h1>LoL Item Recommender</h1>
+    <p>AI-powered recommendations based on your game state</p>
+</div>
 
-  <label>Lane</label>
-  <select id="lane">
-    <option>TOP</option>
-    <option>JUNGLE</option>
-    <option>MID</option>
-    <option>BOTTOM</option>
-    <option>SUPPORT</option>
-  </select>
+<div class="container">
 
-  <label>Game Stage</label>
-  <select id="time_bucket">
-    <option>early</option>
-    <option>mid</option>
-    <option>late</option>
-  </select>
+<div class="grid">
+    <div class="field">
+        <label>Your Champion</label>
+        <select id="champion">
+            <option value="">Select champion...</option>
+            {{CHAMPION_OPTIONS}}
+        </select>
+    </div>
 
-  <label>KDA (e.g. 3/1/5)</label>
-  <input id="kda" placeholder="kills/deaths/assists">
+    <div class="field">
+        <label>Lane</label>
+        <select id="lane">
+            <option>TOP</option>
+            <option>JUNGLE</option>
+            <option>MID</option>
+            <option>BOTTOM</option>
+            <option>SUPPORT</option>
+        </select>
+    </div>
+</div>
 
-  <label>Gold Difference</label>
-  <input id="gold_diff" type="number" placeholder="e.g. 1500">
+<div class="grid">
+    <div class="field">
+        <label>Game Stage</label>
+        <select id="time_bucket">
+            <option>early</option>
+            <option>mid</option>
+            <option>late</option>
+        </select>
+    </div>
 
-  <label>Win (1 = winning, 0 = losing)</label>
-  <select id="win">
-    <option value="1">Winning</option>
-    <option value="0">Losing</option>
-  </select>
+    <div class="field">
+        <label>KDA</label>
+        <input id="kda" placeholder="8/2/6">
+    </div>
+</div>
 
-  <button onclick="predict()">Get Recommendation</button>
-  <pre id="out"></pre>
+<div class="grid">
+    <div class="field">
+        <label>Gold Lead / Deficit</label>
+        <select id="gold">
+            <option value="3000">Far Ahead</option>
+            <option value="1500">Ahead</option>
+            <option value="0">Even</option>
+            <option value="-1500">Behind</option>
+            <option value="-3000">Far Behind</option>
+        </select>
+    </div>
 
-  <script>
-    async function predict() {
-      const data = {
+    <div class="field">
+        <label>Winning?</label>
+        <select id="win">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+        </select>
+    </div>
+</div>
+
+<div class="section-title">Enemy Team</div>
+
+<div class="grid">
+    <div class="field">
+        <label>Enemy 1</label>
+        <select id="enemy_1">
+            <option value="None">Select...</option>
+            {{CHAMPION_OPTIONS}}
+        </select>
+    </div>
+
+    <div class="field">
+        <label>Enemy 2</label>
+        <select id="enemy_2">
+            <option value="None">Select...</option>
+            {{CHAMPION_OPTIONS}}
+        </select>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="field">
+        <label>Enemy 3</label>
+        <select id="enemy_3">
+            <option value="None">Select...</option>
+            {{CHAMPION_OPTIONS}}
+        </select>
+    </div>
+
+    <div class="field">
+        <label>Enemy 4</label>
+        <select id="enemy_4">
+            <option value="None">Select...</option>
+            {{CHAMPION_OPTIONS}}
+        </select>
+    </div>
+</div>
+
+<div class="field" style="margin-bottom:15px;">
+    <label>Enemy 5</label>
+    <select id="enemy_5">
+        <option value="None">Select...</option>
+        {{CHAMPION_OPTIONS}}
+    </select>
+</div>
+
+<button class="btn" onclick="predict()">Generate Recommendation</button>
+
+<div id="errorBox"></div>
+
+<div class="results" id="results">
+
+    <div class="card">
+        <div class="small">BEST ITEM TO BUILD</div>
+        <div class="big" id="bestItem"></div>
+    </div>
+
+    <div class="small" style="margin-bottom:10px;">TOP PREDICTIONS</div>
+
+    <div class="top3" id="top3"></div>
+
+</div>
+
+</div>
+
+<script>
+async function predict(){
+
+    const data = {
         champion: document.getElementById("champion").value,
         lane: document.getElementById("lane").value,
         time_bucket: document.getElementById("time_bucket").value,
-        kda: document.getElementById("kda").value,
-        gold_diff: Number(document.getElementById("gold_diff").value),
-        win: Number(document.getElementById("win").value)
-      };
-      const r = await fetch("/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      const j = await r.json();
-      document.getElementById("out").innerText = JSON.stringify(j, null, 2);
+        kda: document.getElementById("kda").value || "0/0/0",
+        gold: Number(document.getElementById("gold").value || 0),
+        win: Number(document.getElementById("win").value || 0),
+
+        cs: 0,
+        vision: 0,
+
+        enemy_1: document.getElementById("enemy_1").value,
+        enemy_2: document.getElementById("enemy_2").value,
+        enemy_3: document.getElementById("enemy_3").value,
+        enemy_4: document.getElementById("enemy_4").value,
+        enemy_5: document.getElementById("enemy_5").value
+    };
+
+    document.getElementById("results").style.display = "none";
+    document.getElementById("errorBox").innerHTML = "";
+
+    try{
+
+        const response = await fetch("/predict",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if(result.error){
+            document.getElementById("errorBox").innerHTML =
+                `<div class="error">${result.error}</div>`;
+            return;
+        }
+
+        document.getElementById("results").style.display = "block";
+        document.getElementById("bestItem").innerText = result.prediction;
+
+        let html = "";
+
+        result.top3.forEach((item,index)=>{
+
+            const pct = Math.round((item.prob || 0) * 100);
+
+            html += `
+            <div class="item-card">
+                <div class="rank">#${index + 1}</div>
+                <div class="item-name">${item.item}</div>
+
+                <div class="bar">
+                    <div class="fill" style="width:${pct}%"></div>
+                </div>
+
+                <div class="small">${pct}% confidence</div>
+                <div class="small">${item.reason || ""}</div>
+            </div>
+            `;
+        });
+
+        document.getElementById("top3").innerHTML = html;
+
+    }catch(err){
+
+        document.getElementById("errorBox").innerHTML =
+            `<div class="error">${err.message}</div>`;
     }
-  </script>
+}
+</script>
+
 </body>
 </html>
