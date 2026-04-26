@@ -1,5 +1,3 @@
-# utils/game_logic.py
-
 TANK_CHAMPS = {
     "Ornn", "Malphite", "Sion", "Shen", "Nasus", "Maokai", "Rammus",
     "Sejuani", "Poppy", "TahmKench", "Chogath", "DrMundo", "KSante"
@@ -18,49 +16,83 @@ MAGE_CHAMPS = {
 
 CRIT_THREATS = {
     "Yasuo", "Yone", "Jinx", "Caitlyn", "Tryndamere", "Tristana",
-    "Draven", "Jhin", "Vayne", "Xayah", "Samira", "Aphelios"
+    "Draven", "Jhin", "Vayne", "Xayah", "Samira", "Aphelios",
+    "MasterYi"
 }
 
 AP_THREATS = {
     "Lux", "Ahri", "Syndra", "Viktor", "Veigar", "Brand", "Ziggs",
-    "Xerath", "Katarina", "Diana", "Ekko", "Fizz", "Anivia", "Cassiopeia"
+    "Xerath", "Katarina", "Diana", "Ekko", "Fizz", "Anivia",
+    "Cassiopeia", "Morgana", "Malzahar"
 }
 
 AD_THREATS = {
     "Yasuo", "Yone", "Jinx", "Caitlyn", "Tryndamere", "Zed", "Talon",
-    "Draven", "Jhin", "Vayne", "Darius", "Riven", "Jayce", "Fiora"
+    "Draven", "Jhin", "Vayne", "Darius", "Riven", "Jayce", "Fiora",
+    "MasterYi"
 }
 
 STARTER_ITEMS = {
-    "Doran's Blade", "Doran's Shield", "Doran's Ring", "Cull", "Dark Seal"
+    "Doran's Blade",
+    "Doran's Shield",
+    "Doran's Ring",
+    "Cull",
+    "Dark Seal"
 }
 
 TANK_ITEMS = {
-    "Randuin's Omen", "Frozen Heart", "Thornmail", "Sunfire Aegis",
-    "Hollow Radiance", "Heartsteel", "Jak'Sho, The Protean",
-    "Kaenic Rookern", "Force of Nature", "Spirit Visage", "Dead Man's Plate"
+    "Randuin's Omen",
+    "Frozen Heart",
+    "Thornmail",
+    "Sunfire Aegis",
+    "Hollow Radiance",
+    "Heartsteel",
+    "Jak'Sho, The Protean",
+    "Kaenic Rookern",
+    "Force of Nature",
+    "Spirit Visage",
+    "Dead Man's Plate",
+    "Unending Despair"
 }
 
 ADC_ITEMS = {
-    "Infinity Edge", "Kraken Slayer", "The Collector", "Runaan's Hurricane",
-    "Phantom Dancer", "Lord Dominik's Regards", "Mortal Reminder",
-    "Bloodthirster", "Statikk Shiv", "Rapid Firecannon", "Guardian Angel"
+    "Infinity Edge",
+    "Kraken Slayer",
+    "The Collector",
+    "Runaan's Hurricane",
+    "Phantom Dancer",
+    "Lord Dominik's Regards",
+    "Mortal Reminder",
+    "Bloodthirster",
+    "Statikk Shiv",
+    "Rapid Firecannon",
+    "Guardian Angel",
+    "Berserker's Greaves"
 }
 
 MAGE_ITEMS = {
-    "Rabadon's Deathcap", "Luden's Companion", "Shadowflame",
-    "Zhonya's Hourglass", "Void Staff", "Liandry's Torment",
-    "Morellonomicon", "Banshee's Veil", "Stormsurge"
+    "Rabadon's Deathcap",
+    "Luden's Companion",
+    "Shadowflame",
+    "Zhonya's Hourglass",
+    "Void Staff",
+    "Liandry's Torment",
+    "Morellonomicon",
+    "Banshee's Veil",
+    "Stormsurge"
 }
 
 
 def get_champion_role(champion):
     if champion in TANK_CHAMPS:
         return "tank"
+
     if champion in ADC_CHAMPS:
         return "adc"
+
     if champion in MAGE_CHAMPS:
         return "mage"
+
     return "unknown"
 
 
@@ -81,7 +113,7 @@ def analyze_enemy_team(raw_row):
         "enemies": enemies,
         "crit_count": crit_count,
         "ap_count": ap_count,
-        "ad_count": ad_count,
+        "ad_count": ad_count
     }
 
 
@@ -89,13 +121,16 @@ def is_valid_item_for_role(item_name, champion):
     role = get_champion_role(champion)
 
     if role == "tank":
-        return item_name in TANK_ITEMS or item_name not in ADC_ITEMS | MAGE_ITEMS
+        if item_name in ADC_ITEMS or item_name in MAGE_ITEMS:
+            return False
 
     if role == "adc":
-        return item_name in ADC_ITEMS or item_name not in TANK_ITEMS | MAGE_ITEMS
+        if item_name in TANK_ITEMS or item_name in MAGE_ITEMS:
+            return False
 
     if role == "mage":
-        return item_name in MAGE_ITEMS or item_name not in ADC_ITEMS | TANK_ITEMS
+        if item_name in ADC_ITEMS or item_name in TANK_ITEMS:
+            return False
 
     return True
 
@@ -104,6 +139,7 @@ def item_bonus(item_name, raw_row):
     champion = raw_row.get("champion", "")
     time_bucket = raw_row.get("time_bucket", "mid")
     threat = analyze_enemy_team(raw_row)
+
     bonus = 0.0
 
     if time_bucket in {"mid", "late"} and item_name in STARTER_ITEMS:
@@ -118,20 +154,32 @@ def item_bonus(item_name, raw_row):
             bonus += 0.20
 
     if threat["ad_count"] >= 3:
-        if item_name in {"Randuin's Omen", "Frozen Heart", "Thornmail", "Sunfire Aegis"}:
+        if item_name in {
+            "Randuin's Omen",
+            "Frozen Heart",
+            "Thornmail",
+            "Sunfire Aegis"
+        }:
             bonus += 0.25
 
     if threat["ap_count"] >= 3:
-        if item_name in {"Kaenic Rookern", "Force of Nature", "Spirit Visage", "Hollow Radiance"}:
+        if item_name in {
+            "Kaenic Rookern",
+            "Force of Nature",
+            "Spirit Visage",
+            "Hollow Radiance"
+        }:
             bonus += 0.35
 
-    if champion in TANK_CHAMPS and item_name in TANK_ITEMS:
+    role = get_champion_role(champion)
+
+    if role == "tank" and item_name in TANK_ITEMS:
         bonus += 0.20
 
-    if champion in ADC_CHAMPS and item_name in ADC_ITEMS:
+    if role == "adc" and item_name in ADC_ITEMS:
         bonus += 0.20
 
-    if champion in MAGE_CHAMPS and item_name in MAGE_ITEMS:
+    if role == "mage" and item_name in MAGE_ITEMS:
         bonus += 0.20
 
     return bonus
@@ -155,20 +203,30 @@ def explain_item(item_name, raw_row):
         reasons.append("This fits a mage build by improving ability power or survivability.")
 
     if threat["crit_count"] >= 3 and item_name == "Randuin's Omen":
-        reasons.append("The enemy team has multiple critical strike threats, so anti-crit armor is highly valuable.")
+        reasons.append("The enemy team has multiple critical strike threats, so anti-crit armor is valuable.")
 
-    if threat["ad_count"] >= 3 and item_name in {"Randuin's Omen", "Frozen Heart", "Thornmail", "Sunfire Aegis"}:
-        reasons.append("The enemy team is physical damage heavy, so armor is prioritized.")
+    if threat["ad_count"] >= 3 and item_name in {
+        "Randuin's Omen",
+        "Frozen Heart",
+        "Thornmail",
+        "Sunfire Aegis"
+    }:
+        reasons.append("The enemy team is physical-damage heavy, so armor is prioritized.")
 
-    if threat["ap_count"] >= 3 and item_name in {"Kaenic Rookern", "Force of Nature", "Spirit Visage", "Hollow Radiance"}:
-        reasons.append("The enemy team is magic damage heavy, so magic resistance is prioritized.")
+    if threat["ap_count"] >= 3 and item_name in {
+        "Kaenic Rookern",
+        "Force of Nature",
+        "Spirit Visage",
+        "Hollow Radiance"
+    }:
+        reasons.append("The enemy team is magic-damage heavy, so magic resistance is prioritized.")
 
     if time_bucket == "early":
-        reasons.append("Early game recommendations focus on lane survival and efficient first purchases.")
+        reasons.append("Early-game recommendations focus on lane survival and efficient first purchases.")
     elif time_bucket == "mid":
-        reasons.append("Mid game recommendations focus on core item spikes.")
+        reasons.append("Mid-game recommendations focus on core item spikes.")
     else:
-        reasons.append("Late game recommendations focus on teamfight impact and survivability.")
+        reasons.append("Late-game recommendations focus on teamfight impact and survivability.")
 
     if not reasons:
         reasons.append("Recommended based on learned match patterns from the neural network.")

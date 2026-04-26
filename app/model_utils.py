@@ -1,10 +1,7 @@
-# app/model_utils.py
-
 import os
 import joblib
 import numpy as np
 import torch
-import torch.nn as nn
 
 from preprocessing.encode import load_encoders, encode_row
 from utils.item_names import get_item_name
@@ -13,29 +10,9 @@ from utils.game_logic import (
     item_bonus,
     explain_item
 )
+from models.mlp_model import MLP
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "saved_models")
-
-
-class MLP(nn.Module):
-    def __init__(self, in_dim, out_dim):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(in_dim, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, out_dim)
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 def load_pipeline():
@@ -46,6 +23,7 @@ def load_pipeline():
 
     for model_name in ["mlp_model.pt", "rf_model.joblib"]:
         model_path = os.path.join(MODEL_PATH, model_name)
+
         if os.path.exists(model_path):
             return {
                 "encoders": encoders,
@@ -61,12 +39,20 @@ def _load_model_predictions(pipeline, X):
 
     if model_path.endswith(".joblib"):
         model = joblib.load(model_path)
+
         probs = model.predict_proba([X])[0]
-        classes = model.classes_
+        classes = np.array(model.classes_)
+
         return classes, probs
 
     meta = joblib.load(os.path.join(os.path.dirname(model_path), "mlp_meta.joblib"))
-    model = torch.load(model_path, map_location="cpu")
+
+    model = MLP(
+        in_dim=meta["in_dim"],
+        out_dim=meta["out_dim"]
+    )
+
+    model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
 
     with torch.no_grad():
@@ -74,6 +60,7 @@ def _load_model_predictions(pipeline, X):
         probs = torch.softmax(logits, dim=1).squeeze(0).numpy()
 
     classes = np.array(meta["classes"])
+
     return classes, probs
 
 
@@ -90,16 +77,16 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=40):
         if not is_valid_item_for_role(item_name, champion):
             continue
 
-        original_prob = float(probs[idx])
+        model_prob = float(probs[idx])
         bonus = item_bonus(item_name, raw_row)
-        final_score = original_prob + bonus
+        adjusted_score = model_prob + bonus
 
         candidates.append({
             "item_id": item_id,
             "item": item_name,
-            "model_prob": original_prob,
-            "rule_bonus": round(bonus, 4),
-            "final_score": final_score,
+            "model_prob": model_prob,
+            "rule_bonus": bonus,
+            "adjusted_score": adjusted_score,
             "reason": explain_item(item_name, raw_row)
         })
 
@@ -107,28 +94,30 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=40):
         for idx in ranked_idx[:3]:
             item_id = classes[idx]
             item_name = get_item_name(item_id)
+
             candidates.append({
                 "item_id": item_id,
                 "item": item_name,
                 "model_prob": float(probs[idx]),
                 "rule_bonus": 0.0,
-                "final_score": float(probs[idx]),
+                "adjusted_score": float(probs[idx]),
                 "reason": explain_item(item_name, raw_row)
             })
 
-    candidates = sorted(candidates, key=lambda x: x["final_score"], reverse=True)
-
-    total = sum(max(c["final_score"], 0.0) for c in candidates[:3])
-    if total <= 0:
-        total = 1.0
+    candidates = sorted(
+        candidates,
+        key=lambda x: x["adjusted_score"],
+        reverse=True
+    )
 
     top3 = []
+
     for c in candidates[:3]:
         top3.append({
             "item": c["item"],
             "prob": round(c["model_prob"], 4),
-            "adjusted_score": round(c["final_score"], 4),
-            "rule_bonus": c["rule_bonus"],
+            "adjusted_score": round(c["adjusted_score"], 4),
+            "rule_bonus": round(c["rule_bonus"], 4),
             "reason": c["reason"]
         })
 
@@ -140,7 +129,7 @@ def predict_next_item(pipeline, raw_row):
 
     X = encode_row(raw_row, encoders)
 
-    if pipeline.get("scaler"):
+    if pipeline.get("scaler") is not None:
         X = pipeline["scaler"].transform([X])[0]
 
     classes, probs = _load_model_predictions(pipeline, X)
