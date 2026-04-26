@@ -5,13 +5,37 @@ DATA = "data/"
 OUT = "data/decision_points.csv"
 
 EXCLUDE = {
+    # Consumables / trinkets / wards
     "Health Potion", "Total Biscuit of Everlasting Will",
-    "World Atlas", "Stealth Ward", "Control Ward",
+    "Stealth Ward", "Control Ward", "Oracle Lens", "Farsight Alteration",
     "Elixir of Iron", "Elixir of Sorcery", "Elixir of Wrath",
-    "Oracle Lens", "Farsight Alteration",
+
+    # Starter items
     "Doran's Shield", "Doran's Blade", "Doran's Ring",
-    "Dark Seal", "Cull", "Gustwalker Hatchling",
-    "Mosstomper Seedling", "Scorchclaw Pup"
+    "Dark Seal", "Cull", "World Atlas",
+
+    # Jungle starters
+    "Gustwalker Hatchling", "Mosstomper Seedling", "Scorchclaw Pup",
+
+    # Boots / basic boots
+    "Boots", "Slightly Magical Footwear",
+
+    # Common components
+    "Long Sword", "Dagger", "Amplifying Tome", "Ruby Crystal",
+    "Cloth Armor", "Null-Magic Mantle", "Sapphire Crystal",
+    "Rejuvenation Bead", "Faerie Charm", "Pickaxe", "B. F. Sword",
+    "Needlessly Large Rod", "Giant's Belt", "Blasting Wand",
+    "Tear of the Goddess", "Sheen", "Kindlegem", "Caulfield's Warhammer",
+    "Serrated Dirk", "Recurve Bow", "Vampiric Scepter", "Negatron Cloak",
+    "Chain Vest", "Aether Wisp", "Fiendish Codex", "Hextech Alternator",
+    "Noonquiver", "Kircheis Shard", "Hearthbound Axe",
+    "Winged Moonplate", "Glowing Mote", "Rectrix",
+
+    # Small upgraded components
+    "Executioner's Calling", "Bramble Vest", "Oblivion Orb",
+    "Spectre's Cowl", "Warden's Mail", "Rageknife",
+    "Last Whisper", "Zeal", "Bami's Cinder",
+    "Lost Chapter", "Phage", "Tunneler", "Ironspike Whip"
 }
 
 def time_bucket(seconds):
