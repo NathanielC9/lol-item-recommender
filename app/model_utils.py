@@ -64,7 +64,7 @@ def _load_model_predictions(pipeline, X):
     return classes, probs
 
 
-def _rerank_items(classes, probs, raw_row, top_n_pool=40):
+def _rerank_items(classes, probs, raw_row, top_n_pool=200):
     champion = raw_row.get("champion", "")
 
     ranked_idx = np.argsort(probs)[::-1]
