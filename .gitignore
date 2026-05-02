@@ -7,4 +7,5 @@ data/TeamMatchTbl.csv
 data/MatchTbl.csv
 data/ChampionTbl.csv
 data/ItemTbl.csv
-data/RankTbl.csv
+data/RankTbl.csv__pycache__/
+*.pyc
