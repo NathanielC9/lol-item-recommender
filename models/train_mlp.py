@@ -72,6 +72,7 @@ epochs = 50
 batch = 512
 
 best_acc = 0
+best_acc3 = 0
 patience = 8
 patience_counter = 0
 
@@ -126,6 +127,7 @@ for epoch in range(epochs):
 
     if acc3 > best_acc3:
         best_acc3 = acc3
+        best_acc = acc1
         patience_counter = 0
 
         torch.save(
@@ -146,6 +148,10 @@ for epoch in range(epochs):
         patience_counter += 1
 
         if patience_counter >= patience:
-            print(f"Early stopping at epoch {epoch + 1} — best Top-3: {best_acc3:.4f}")
+            print(
+                f"Early stopping at epoch {epoch + 1} — "
+                f"best Top-1: {best_acc:.4f}, best Top-3: {best_acc3:.4f}"
+            )
+            break
 
 print("MLP saved.")
