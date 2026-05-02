@@ -68,11 +68,11 @@ scheduler = optim.lr_scheduler.StepLR(
 
 loss_fn = torch.nn.CrossEntropyLoss()
 
-epochs = 30
+epochs = 50
 batch = 512
 
 best_acc = 0
-patience = 5
+patience = 8
 patience_counter = 0
 
 print("Training...")
@@ -124,8 +124,8 @@ for epoch in range(epochs):
         f"Top-3: {acc3:.4f}"
     )
 
-    if acc1 > best_acc:
-        best_acc = acc1
+    if acc3 > best_acc3:
+        best_acc3 = acc3
         patience_counter = 0
 
         torch.save(
@@ -146,7 +146,6 @@ for epoch in range(epochs):
         patience_counter += 1
 
         if patience_counter >= patience:
-            print(f"Early stopping at epoch {epoch + 1} — best Top-1: {best_acc:.4f}")
-            break
+            print(f"Early stopping at epoch {epoch + 1} — best Top-3: {best_acc3:.4f}")
 
 print("MLP saved.")

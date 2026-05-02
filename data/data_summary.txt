@@ -1,0 +1,41 @@
+LoL Item Recommender Dataset Summary
+
+Dataset source:
+Kaggle - LoL Match History and Summoner Data 80k Matches
+Author: nathansmallcalder
+
+Generated file:
+data/decision_points.csv
+
+Final cleaned dataset:
+Rows: 481,991
+Unique item classes: 230
+Input dimension: 191
+Top-1 accuracy: 30.50%
+Top-3 accuracy: 56.69%
+
+Columns:
+champion, lane, time_bucket, kda, gold, win, cs, vision,
+enemy_1, enemy_2, enemy_3, enemy_4, enemy_5, label_item
+
+Cleaning performed:
+- Removed consumables
+- Removed wards/trinkets
+- Removed starter items
+- Removed jungle starter items
+- Removed basic boots
+- Removed completed boots from training labels
+- Removed item components
+- Removed low-priority noisy labels
+- Verified excluded items remaining: 0
+
+Final model trained on cleaned dataset:
+Input dimension: 183
+Output classes: 240
+Top-1 accuracy: 15.46%
+Top-3 accuracy: 34.33%
+
+Data engineer contribution:
+Created cleaned recommendation dataset, item label filtering rules,
+class balancing, sanity checks, item metadata, and dataset documentation.
+Label changed from last valid item to highest-priority core item.

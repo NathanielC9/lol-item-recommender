@@ -4,7 +4,6 @@ DATA = "data/"
 OUT = "data/decision_points.csv"
 
 
-# Items that should never be used as recommendation labels
 CONSUMABLES = {
     "Health Potion", "Refillable Potion", "Total Biscuit of Everlasting Will",
     "Stealth Ward", "Control Ward", "Oracle Lens", "Farsight Alteration",
@@ -36,7 +35,7 @@ COMPLETED_BOOTS = {
 COMPONENT_ITEMS = {
     "Long Sword", "Dagger", "Amplifying Tome", "Ruby Crystal",
     "Cloth Armor", "Null-Magic Mantle", "Sapphire Crystal",
-    "Rejuvenation Bead", "Faerie Charm", "Pickaxe", "B. F. Sword", "Cloak of Agility",
+    "Rejuvenation Bead", "Faerie Charm", "Pickaxe", "B. F. Sword",
     "Needlessly Large Rod", "Giant's Belt", "Blasting Wand",
     "Tear of the Goddess", "Sheen", "Kindlegem", "Caulfield's Warhammer",
     "Serrated Dirk", "Recurve Bow", "Vampiric Scepter", "Negatron Cloak",
@@ -46,22 +45,131 @@ COMPONENT_ITEMS = {
     "Executioner's Calling", "Bramble Vest", "Oblivion Orb",
     "Spectre's Cowl", "Warden's Mail", "Rageknife",
     "Last Whisper", "Zeal", "Bami's Cinder",
-    "Lost Chapter", "Phage", "Tunneler", "Ironspike Whip"
+    "Lost Chapter", "Phage", "Tunneler", "Ironspike Whip",
+    "Cloak of Agility"
 }
 
 LOW_PRIORITY_ITEMS = {
-    "Steel Sigil",
-    "Crimson Lucidity"
+    "Steel Sigil"
 }
 
 EXCLUDE = (
     CONSUMABLES
     | STARTER_ITEMS
     | BASIC_BOOTS
-    | COMPONENT_ITEMS
     | COMPLETED_BOOTS
+    | COMPONENT_ITEMS
     | LOW_PRIORITY_ITEMS
 )
+
+
+TANK_CHAMPS = {
+    "Ornn", "Malphite", "Sion", "Shen", "Nasus", "Maokai", "Rammus",
+    "Sejuani", "Poppy", "TahmKench", "Tahm Kench", "Chogath", "Cho'Gath",
+    "DrMundo", "Dr. Mundo", "KSante", "K'Sante"
+}
+
+ADC_CHAMPS = {
+    "Jinx", "Caitlyn", "Ashe", "Vayne", "Kaisa", "Kai'Sa", "Jhin", "Draven",
+    "Ezreal", "Lucian", "MissFortune", "Miss Fortune", "Tristana", "Twitch",
+    "Xayah", "Zeri", "Varus", "Sivir", "Samira", "Aphelios", "Kindred", "Graves"
+}
+
+MAGE_CHAMPS = {
+    "Ahri", "Lux", "Syndra", "Viktor", "Veigar", "Orianna", "Annie",
+    "Brand", "Velkoz", "Vel'Koz", "Xerath", "Ziggs", "Malzahar",
+    "Cassiopeia", "Morgana", "Katarina", "Diana", "Ekko", "Fizz",
+    "Anivia"
+}
+
+CRIT_THREATS = {
+    "Yasuo", "Yone", "Jinx", "Caitlyn", "Tryndamere", "Tristana",
+    "Draven", "Jhin", "Vayne", "Xayah", "Samira", "Aphelios",
+    "MasterYi", "Master Yi"
+}
+
+AP_THREATS = {
+    "Lux", "Ahri", "Syndra", "Viktor", "Veigar", "Brand", "Ziggs",
+    "Xerath", "Katarina", "Diana", "Ekko", "Fizz", "Anivia",
+    "Cassiopeia", "Morgana", "Malzahar"
+}
+
+AD_THREATS = {
+    "Yasuo", "Yone", "Jinx", "Caitlyn", "Tryndamere", "Zed", "Talon",
+    "Draven", "Jhin", "Vayne", "Darius", "Riven", "Jayce", "Fiora",
+    "MasterYi", "Master Yi"
+}
+
+ITEM_PRIORITY = {
+    # High-impact carry items
+    "Infinity Edge": 5,
+    "Kraken Slayer": 5,
+    "Lord Dominik's Regards": 5,
+    "Mortal Reminder": 5,
+    "Rabadon's Deathcap": 5,
+    "Void Staff": 5,
+    "Liandry's Torment": 5,
+    "Randuin's Omen": 5,
+    "Frozen Heart": 5,
+    "Thornmail": 5,
+    "Jak'Sho, The Protean": 5,
+    "Kaenic Rookern": 5,
+    "Force of Nature": 5,
+
+    # Strong completed items
+    "Bloodthirster": 4,
+    "Guardian Angel": 4,
+    "Blade of The Ruined King": 4,
+    "Black Cleaver": 4,
+    "Trinity Force": 4,
+    "Death's Dance": 4,
+    "Sterak's Gage": 4,
+    "Serylda's Grudge": 4,
+    "Shadowflame": 4,
+    "Luden's Companion": 4,
+    "Zhonya's Hourglass": 4,
+    "Stormsurge": 4,
+    "Riftmaker": 4,
+    "Spirit Visage": 4,
+    "Unending Despair": 4,
+    "Heartsteel": 4,
+
+    # Medium-priority items
+    "The Collector": 3,
+    "Rapid Firecannon": 3,
+    "Runaan's Hurricane": 3,
+    "Phantom Dancer": 3,
+    "Immortal Shieldbow": 3,
+    "Sundered Sky": 3,
+    "Spear of Shojin": 3,
+    "Eclipse": 3,
+    "Blackfire Torch": 3,
+    "Malignance": 3,
+    "Rylai's Crystal Scepter": 3,
+
+    # Lower-priority but still valid completed items
+    "Statikk Shiv": 2,
+}
+
+
+def choose_best_label_item(items):
+    """
+    Selects one recommendation label from the cleaned inventory.
+
+    Instead of using the last item in inventory, this picks the item with
+    the highest general recommendation value. This reduces noisy labels
+    without using champion-specific hardcoding.
+    """
+    return max(items, key=lambda item: ITEM_PRIORITY.get(item, 3))
+
+def get_champion_role(champion):
+    if champion in TANK_CHAMPS:
+        return "tank"
+    if champion in ADC_CHAMPS:
+        return "adc"
+    if champion in MAGE_CHAMPS:
+        return "mage"
+    return "unknown"
 
 
 def time_bucket(seconds):
@@ -70,6 +178,14 @@ def time_bucket(seconds):
     elif seconds < 2400:
         return "mid"
     return "late"
+
+
+def count_enemy_tags(enemy_champs):
+    enemy_ad_count = sum(1 for champ in enemy_champs if champ in AD_THREATS)
+    enemy_ap_count = sum(1 for champ in enemy_champs if champ in AP_THREATS)
+    enemy_crit_count = sum(1 for champ in enemy_champs if champ in CRIT_THREATS)
+
+    return enemy_ad_count, enemy_ap_count, enemy_crit_count
 
 
 def main():
@@ -128,7 +244,6 @@ def main():
                 item_name = item_lookup.get(int(val), str(int(val)))
                 items.append(item_name)
 
-        # Remove bad labels
         items = [item for item in items if item not in EXCLUDE]
 
         if not items:
@@ -154,24 +269,55 @@ def main():
         else:
             enemy_champs = blue_champs
 
-        # One target label per player row.
-        # This reduces conflicting labels from the same exact match state.
-        label_item = items[-1]
+        enemy_ad_count, enemy_ap_count, enemy_crit_count = count_enemy_tags(enemy_champs)
+
+        kills = int(r.get("kills", 0))
+        deaths = int(r.get("deaths", 0))
+        assists = int(r.get("assists", 0))
+        kda_ratio = (kills + assists) / max(1, deaths)
+
+        gold = float(r.get("TotalGold", 0))
+        cs = float(r.get("MinionsKilled", 0))
+        vision = float(r.get("visionScore", 0))
+
+        game_duration = float(r.get("GameDuration", 1))
+        game_minutes = max(game_duration / 60.0, 1.0)
+
+        gold_per_min = gold / game_minutes
+        cs_per_min = cs / game_minutes
+        vision_per_min = vision / game_minutes
+
+        label_item = choose_best_label_item(items)
 
         rows.append({
             "champion": player_champ,
+            "role": get_champion_role(player_champ),
             "lane": str(r.get("Lane", "NONE")),
             "time_bucket": r["time_bucket"],
-            "kda": f"{int(r.get('kills', 0))}/{int(r.get('deaths', 0))}/{int(r.get('assists', 0))}",
-            "gold": float(r.get("TotalGold", 0)),
+
+            "kills": kills,
+            "deaths": deaths,
+            "assists": assists,
+            "kda_ratio": round(kda_ratio, 3),
+
+            "gold": gold,
+            "gold_per_min": round(gold_per_min, 3),
             "win": int(r.get("Win", 0)),
-            "cs": float(r.get("MinionsKilled", 0)),
-            "vision": float(r.get("visionScore", 0)),
+            "cs": cs,
+            "cs_per_min": round(cs_per_min, 3),
+            "vision": vision,
+            "vision_per_min": round(vision_per_min, 3),
+
             "enemy_1": enemy_champs[0] if len(enemy_champs) > 0 else "None",
             "enemy_2": enemy_champs[1] if len(enemy_champs) > 1 else "None",
             "enemy_3": enemy_champs[2] if len(enemy_champs) > 2 else "None",
             "enemy_4": enemy_champs[3] if len(enemy_champs) > 3 else "None",
             "enemy_5": enemy_champs[4] if len(enemy_champs) > 4 else "None",
+
+            "enemy_ad_count": enemy_ad_count,
+            "enemy_ap_count": enemy_ap_count,
+            "enemy_crit_count": enemy_crit_count,
+
             "label_item": label_item
         })
 
@@ -191,7 +337,11 @@ def main():
     print("\nDataset sanity check")
     print("Rows:", len(out))
     print("Unique champions:", out["champion"].nunique())
+    print("Unique roles:", out["role"].nunique())
     print("Unique label items:", out["label_item"].nunique())
+
+    print("\nColumns:")
+    print(out.columns.tolist())
 
     print("\nTop 30 label items:")
     print(out["label_item"].value_counts().head(30))
@@ -202,7 +352,6 @@ def main():
     out.to_csv(OUT, index=False)
 
     print(f"\nSaved cleaned dataset to {OUT}")
-    print("Columns:", out.columns.tolist())
 
 
 if __name__ == "__main__":

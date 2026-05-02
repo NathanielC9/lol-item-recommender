@@ -1,0 +1,51 @@
+\item_name,role_tags,stat_tags,timing_tags,counter_tags,effect_tags
+Infinity Edge,adc,damage|crit,mid|late,squishy|carry,crit_damage|damage_spike
+Liandry's Torment,mage,ap|health,mid|late,tank|health_stack|extended_fight,burn_damage|sustained_damage
+Luden's Companion,mage,ap|mana,early|mid,squishy|poke,burst_damage|poke_damage
+Rabadon's Deathcap,mage,ap,late,squishy|carry,ap_amplification|damage_spike
+Shadowflame,mage,ap|magic_pen,mid,squishy|shield,burst_damage|magic_penetration
+The Collector,adc|assassin,damage|crit|lethality,mid,squishy|low_health,execute|burst_damage
+Stormsurge,mage,ap|movement_speed,mid,squishy,burst_damage|mobility
+Thornmail,tank,armor|health,mid|late,healing|auto_attack|ad,anti_heal|reflect_damage
+Blade of The Ruined King,adc|fighter,attack_speed|lifesteal|on_hit,mid,tank|health_stack|dueling,percent_health_damage|sustain
+Lord Dominik's Regards,adc,damage|crit|armor_pen,mid|late,tank|armor,armor_penetration|anti_tank
+Sundered Sky,fighter,damage|health,mid,dueling|bruiser,sustain|burst_trade
+Trinity Force,fighter,damage|attack_speed|health,mid,dueling|mobility,spellblade|dueling
+Malignance,mage,ap|mana|haste,mid,ultimate_reliant,ultimate_haste|burn_damage
+Kraken Slayer,adc,damage|attack_speed|on_hit,mid|late,tank|extended_fight,on_hit_damage|sustained_damage
+Eclipse,fighter|assassin,damage|shield,early|mid,squishy|short_trade,burst_damage|shield
+Black Cleaver,fighter,damage|health|haste,mid|late,tank|armor,armor_shred|team_damage
+Spear of Shojin,fighter,damage|health|haste,mid,ability_spam,ability_haste|extended_fight
+Rylai's Crystal Scepter,mage,ap|health,mid,kiting|chase,slow|utility
+Blackfire Torch,mage,ap|mana,mid|late,extended_fight|tank,burn_damage|sustained_damage
+Death's Dance,fighter,damage|armor,mid|late,ad|burst,delayed_damage|survivability
+Riftmaker,mage|fighter,ap|health|sustain,mid|late,extended_fight,sustain|extended_fight_damage
+Rapid Firecannon,adc,attack_speed|crit|range,mid|late,poke|positioning,range|poke
+Spirit Visage,tank,health|magic_resist,mid|late,ap|sustain,healing_boost|shield_boost
+Serylda's Grudge,assassin|fighter,damage|armor_pen,mid|late,armor|mobility,armor_penetration|slow
+Unending Despair,tank,armor|health,mid|late,ad|extended_fight,sustain|teamfight_healing
+Bloodthirster,adc,damage|lifesteal|shield,mid|late,burst|dive,sustain|shield
+Heartsteel,tank,health|scaling,early,extended_fight|scaling,health_scaling
+Void Staff,mage,ap|magic_pen,mid|late,magic_resist|tank,magic_penetration
+Immortal Shieldbow,adc,damage|crit|lifesteal,mid|late,burst|dive,shield|survivability
+Sterak's Gage,fighter,health|tenacity,mid|late,burst|dive,shield|anti_burst
+Guardian Angel,adc|fighter,damage|armor,late,burst|dive|late_game,revive|survivability
+Mortal Reminder,adc,damage|crit|armor_pen,mid|late,healing|tank,anti_heal|armor_penetration
+Runaan's Hurricane,adc,attack_speed|crit,mid|late,teamfight|multiple_enemies,aoe_damage
+Phantom Dancer,adc,attack_speed|crit|movement_speed,mid|late,kiting|mobility,kiting|mobility
+Statikk Shiv,adc,attack_speed|waveclear,early|mid,waveclear|lane_pressure,waveclear|poke_damage
+Zhonya's Hourglass,mage,ap|armor,mid|late,burst|dive|ad,stasis|survivability
+Morellonomicon,mage,ap|anti_heal,mid,healing,anti_heal
+Banshee's Veil,mage,ap|magic_resist,mid|late,ap|pick|burst,spell_shield|survivability
+Hollow Radiance,tank,health|magic_resist,early|mid,ap|waveclear,waveclear|burn_damage
+Sunfire Aegis,tank,health|armor,early|mid,melee|ad,burn_damage|waveclear
+Randuin's Omen,tank,armor|health,mid|late,crit|ad|auto_attack,anti_crit|slow
+Frozen Heart,tank,armor|mana|haste,mid|late,auto_attack|attack_speed|ad,attack_speed_reduction
+Jak'Sho, The Protean,tank,armor|magic_resist|health,mid|late,mixed_damage|teamfight,teamfight_durability
+Kaenic Rookern,tank,magic_resist|health,mid|late,ap|burst,magic_shield|survivability
+Force of Nature,tank,magic_resist|movement_speed,mid|late,ap|damage_over_time,magic_damage_reduction|mobility
+Dead Man's Plate,tank,armor|health|movement_speed,mid,ad|mobility,mobility|engage
+Navori Flickerblade,adc,attack_speed|crit|haste,mid|late,ability_spam,ability_haste|crit_synergy
+Terminus,adc|fighter,attack_speed|on_hit|resistances,mid|late,tank|extended_fight,on_hit_damage|mixed_penetration
+Wit's End,adc|fighter,attack_speed|magic_resist|on_hit,mid|late,ap|extended_fight,on_hit_damage|magic_resist
+Guinsoo's Rageblade,adc,attack_speed|on_hit,mid|late,tank|extended_fight,on_hit_damage|scaling_damage
