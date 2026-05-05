@@ -141,7 +141,7 @@ PYTHONPATH=. python -m app.api
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 data/
@@ -176,7 +176,7 @@ These are generated locally.
 
 ---
 
-## 🎯 Future Work
+## Future Work
 
 * Improve model architecture (embeddings, deeper network)
 * Personalize recommendations per player
