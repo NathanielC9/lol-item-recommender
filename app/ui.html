@@ -14,165 +14,244 @@
 
 body{
     font-family:Arial, Helvetica, sans-serif;
-    background:#0a0a0f;
-    color:white;
+    background:#05070c;
+    color:#e8edf5;
+    min-height:100vh;
 }
 
-.hero{
-    background:linear-gradient(135deg,#7F77DD,#D85A30);
-    padding:30px;
-    text-align:center;
+.app{
+    max-width:1080px;
+    margin:0 auto;
+    padding:12px;
 }
 
-.hero h1{
-    font-size:32px;
-    margin-bottom:8px;
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    border-bottom:1px solid #1b2230;
+    padding-bottom:8px;
 }
 
-.hero p{
-    font-size:14px;
-    opacity:0.9;
+.logo h1{
+    font-size:20px;
+    letter-spacing:0.5px;
+    color:#f1c96b;
 }
 
-.container{
-    max-width:950px;
-    margin:auto;
-    padding:25px;
+.status{
+    font-size:11px;
+    color:#9fd2ff;
+    border:1px solid #1f3a54;
+    background:#071521;
+    padding:6px 10px;
+    border-radius:999px;
 }
 
-.grid{
+.layout{
+    display:grid;
+    grid-template-columns:350px 1fr;
+    gap:10px;
+    align-items:start;
+}
+
+.panel{
+    background:#0b0f18;
+    border:1px solid #1b2230;
+    border-radius:14px;
+    padding:14px;
+}
+
+.panel-title{
+    font-size:12px;
+    color:#8c96a8;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    margin-top:8px;
+    margin-bottom:6px;
+}
+
+.panel-title:first-child{
+    margin-top:0;
+}
+
+.compact-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:15px;
-    margin-bottom:15px;
+    gap:8px;
 }
 
 .field{
     display:flex;
     flex-direction:column;
+    gap:5px;
 }
 
-.field label{
-    font-size:12px;
-    color:#999;
-    margin-bottom:6px;
+.field.full{
+    grid-column:1 / -1;
+}
+
+label{
+    font-size:11px;
+    color:#8c96a8;
     text-transform:uppercase;
+    letter-spacing:0.4px;
 }
 
-.field input,
-.field select{
-    padding:10px;
+input,
+select{
+    width:100%;
+    padding:9px 10px;
     border-radius:8px;
-    border:1px solid #333;
-    background:#16161f;
-    color:white;
+    border:1px solid #252d3d;
+    background:#070a11;
+    color:#e8edf5;
+    font-size:13px;
 }
 
-.field input:focus,
-.field select:focus{
+input:focus,
+select:focus{
     outline:none;
-    border-color:#7F77DD;
+    border-color:#c89b3c;
+    box-shadow:0 0 0 2px rgba(200,155,60,0.15);
 }
 
-.section-title{
-    margin-top:12px;
-    margin-bottom:10px;
-    color:#999;
-    font-size:12px;
-    text-transform:uppercase;
+.enemy-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
 }
 
 .btn{
     width:100%;
-    padding:14px;
+    margin-top:12px;
+    padding:11px;
     border:none;
-    border-radius:10px;
-    background:linear-gradient(135deg,#7F77DD,#D85A30);
-    color:white;
-    font-size:16px;
+    border-radius:9px;
+    background:#c89b3c;
+    color:#071017;
     font-weight:bold;
+    font-size:14px;
     cursor:pointer;
-    margin-top:10px;
+}
+
+.btn:hover{
+    background:#e0b95a;
 }
 
 .results{
     display:none;
-    margin-top:25px;
 }
 
-.card{
-    background:#16161f;
-    border:1px solid #2a2a3a;
-    border-radius:12px;
-    padding:18px;
-    margin-bottom:15px;
+.best-card{
+    background:linear-gradient(135deg,#101827,#0b0f18);
+    border:1px solid #2b3850;
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:10px;
 }
 
-.big{
+.kicker{
+    font-size:11px;
+    color:#8c96a8;
+    text-transform:uppercase;
+    letter-spacing:0.8px;
+    margin-bottom:5px;
+}
+
+.best-item{
     font-size:24px;
     font-weight:bold;
+    color:#f1c96b;
 }
 
-.top3{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:12px;
+.recommendations{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
 }
 
 .item-card{
-    background:#16161f;
-    border:1px solid #2a2a3a;
+    background:#0b0f18;
+    border:1px solid #1b2230;
     border-radius:12px;
-    padding:14px;
-    text-align:center;
+    padding:12px;
+}
+
+.item-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
 }
 
 .rank{
     font-size:12px;
-    color:#999;
+    color:#8c96a8;
 }
 
 .item-name{
-    font-size:15px;
+    font-size:17px;
     font-weight:bold;
-    margin:8px 0;
+    color:#ffffff;
 }
 
-.bar{
-    height:6px;
-    background:#333;
-    border-radius:5px;
-    overflow:hidden;
-    margin:8px 0;
+.score{
+    font-size:11px;
+    color:#f1c96b;
+    border:1px solid rgba(241,201,107,0.3);
+    background:rgba(241,201,107,0.08);
+    padding:4px 7px;
+    border-radius:999px;
+    white-space:nowrap;
 }
 
-.fill{
-    height:100%;
-    background:linear-gradient(90deg,#7F77DD,#D85A30);
-}
-
-.small{
-    font-size:12px;
-    color:#aaa;
+.reason{
+    font-size:13px;
+    line-height:1.4;
+    color:#b8c0ce;
     margin-top:6px;
 }
 
 .error{
-    margin-top:20px;
-    background:#311;
-    border:1px solid #633;
-    padding:14px;
-    border-radius:10px;
-    color:#ffaaaa;
+    margin-top:12px;
+    background:#2a0d12;
+    border:1px solid #70313d;
+    padding:10px;
+    border-radius:9px;
+    color:#ffb7c0;
+    font-size:13px;
 }
 
-@media(max-width:800px){
-    .grid{
+.empty-state{
+    min-height:390px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:#7f8898;
+    border:1px dashed #273044;
+    border-radius:14px;
+    padding:20px;
+}
+
+@media(max-width:850px){
+    .layout{
         grid-template-columns:1fr;
     }
 
-    .top3{
+    .compact-grid{
         grid-template-columns:1fr;
+    }
+
+    .enemy-grid{
+        grid-template-columns:1fr;
+    }
+
+    .enemy-grid .field:last-child{
+        grid-column:auto;
     }
 }
 </style>
@@ -180,133 +259,140 @@ body{
 
 <body>
 
-<div class="hero">
-    <h1>LoL Item Recommender</h1>
-    <p>AI-powered recommendations based on your game state</p>
-</div>
+<div class="app">
 
-<div class="container">
-
-<div class="grid">
-    <div class="field">
-        <label>Your Champion</label>
-        <select id="champion">
-            <option value="">Select champion...</option>
-            {{CHAMPION_OPTIONS}}
-        </select>
+    <div class="header">
+        <div class="logo">
+            <h1>LoL Item Recommender</h1>
+        </div>
+        <div class="status">MLP + Game Logic</div>
     </div>
 
-    <div class="field">
-        <label>Lane</label>
-        <select id="lane">
-            <option>TOP</option>
-            <option>JUNGLE</option>
-            <option>MID</option>
-            <option>BOTTOM</option>
-            <option>SUPPORT</option>
-        </select>
+    <div class="layout">
+
+        <div class="panel">
+            <div class="panel-title">Match State</div>
+
+            <div class="compact-grid">
+                <div class="field full">
+                    <label>Your Champion</label>
+                    <select id="champion">
+                        <option value="">Select champion...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Lane</label>
+                    <select id="lane">
+                        <option>TOP</option>
+                        <option>JUNGLE</option>
+                        <option>MID</option>
+                        <option>BOTTOM</option>
+                        <option>SUPPORT</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Stage</label>
+                    <select id="time_bucket">
+                        <option>early</option>
+                        <option selected>mid</option>
+                        <option>late</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>KDA</label>
+                    <input id="kda" placeholder="2/1/2">
+                </div>
+
+                <div class="field">
+                    <label>Gold State</label>
+                    <select id="gold">
+                        <option value="3000">Far Ahead</option>
+                        <option value="1500">Ahead</option>
+                        <option value="0" selected>Even</option>
+                        <option value="-1500">Behind</option>
+                        <option value="-3000">Far Behind</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Winning</label>
+                    <select id="win">
+                        <option value="1" selected>Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="panel-title">Enemy Team</div>
+
+            <div class="enemy-grid">
+                <div class="field">
+                    <label>Enemy 1</label>
+                    <select id="enemy_1">
+                        <option value="None">Select...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Enemy 2</label>
+                    <select id="enemy_2">
+                        <option value="None">Select...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Enemy 3</label>
+                    <select id="enemy_3">
+                        <option value="None">Select...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Enemy 4</label>
+                    <select id="enemy_4">
+                        <option value="None">Select...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Enemy 5</label>
+                    <select id="enemy_5">
+                        <option value="None">Select...</option>
+                        {{CHAMPION_OPTIONS}}
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" onclick="predict()">Recommend Items</button>
+
+            <div id="errorBox"></div>
+        </div>
+
+        <div class="panel">
+            <div id="emptyState" class="empty-state">
+                Enter a match state to generate item recommendations.
+            </div>
+
+            <div class="results" id="results">
+                <div class="best-card">
+                    <div class="kicker">Best Item</div>
+                    <div class="best-item" id="bestItem"></div>
+                </div>
+
+                <div class="panel-title">Top Recommendations</div>
+                <div class="recommendations" id="top3"></div>
+            </div>
+        </div>
+
     </div>
-</div>
-
-<div class="grid">
-    <div class="field">
-        <label>Game Stage</label>
-        <select id="time_bucket">
-            <option>early</option>
-            <option>mid</option>
-            <option>late</option>
-        </select>
-    </div>
-
-    <div class="field">
-        <label>KDA</label>
-        <input id="kda" placeholder="8/2/6">
-    </div>
-</div>
-
-<div class="grid">
-    <div class="field">
-        <label>Gold Lead / Deficit</label>
-        <select id="gold">
-            <option value="3000">Far Ahead</option>
-            <option value="1500">Ahead</option>
-            <option value="0">Even</option>
-            <option value="-1500">Behind</option>
-            <option value="-3000">Far Behind</option>
-        </select>
-    </div>
-
-    <div class="field">
-        <label>Winning?</label>
-        <select id="win">
-            <option value="1">Yes</option>
-            <option value="0">No</option>
-        </select>
-    </div>
-</div>
-
-<div class="section-title">Enemy Team</div>
-
-<div class="grid">
-    <div class="field">
-        <label>Enemy 1</label>
-        <select id="enemy_1">
-            <option value="None">Select...</option>
-            {{CHAMPION_OPTIONS}}
-        </select>
-    </div>
-
-    <div class="field">
-        <label>Enemy 2</label>
-        <select id="enemy_2">
-            <option value="None">Select...</option>
-            {{CHAMPION_OPTIONS}}
-        </select>
-    </div>
-</div>
-
-<div class="grid">
-    <div class="field">
-        <label>Enemy 3</label>
-        <select id="enemy_3">
-            <option value="None">Select...</option>
-            {{CHAMPION_OPTIONS}}
-        </select>
-    </div>
-
-    <div class="field">
-        <label>Enemy 4</label>
-        <select id="enemy_4">
-            <option value="None">Select...</option>
-            {{CHAMPION_OPTIONS}}
-        </select>
-    </div>
-</div>
-
-<div class="field" style="margin-bottom:15px;">
-    <label>Enemy 5</label>
-    <select id="enemy_5">
-        <option value="None">Select...</option>
-        {{CHAMPION_OPTIONS}}
-    </select>
-</div>
-
-<button class="btn" onclick="predict()">Generate Recommendation</button>
-
-<div id="errorBox"></div>
-
-<div class="results" id="results">
-
-    <div class="card">
-        <div class="small">BEST ITEM TO BUILD</div>
-        <div class="big" id="bestItem"></div>
-    </div>
-
-    <div class="small" style="margin-bottom:10px;">TOP PREDICTIONS</div>
-
-    <div class="top3" id="top3"></div>
-
-</div>
 
 </div>
 
@@ -332,10 +418,10 @@ async function predict(){
     };
 
     document.getElementById("results").style.display = "none";
+    document.getElementById("emptyState").style.display = "flex";
     document.getElementById("errorBox").innerHTML = "";
 
     try{
-
         const response = await fetch("/predict",{
             method:"POST",
             headers:{
@@ -352,6 +438,7 @@ async function predict(){
             return;
         }
 
+        document.getElementById("emptyState").style.display = "none";
         document.getElementById("results").style.display = "block";
         document.getElementById("bestItem").innerText = result.prediction;
 
@@ -359,19 +446,19 @@ async function predict(){
 
         result.top3.forEach((item,index)=>{
 
-            const pct = Math.round((item.prob || 0) * 100);
+            const rawProb = item.prob || 0;
+            const pct = Math.max(1, Math.round(rawProb * 100));
 
             html += `
             <div class="item-card">
-                <div class="rank">#${index + 1}</div>
-                <div class="item-name">${item.item}</div>
-
-                <div class="bar">
-                    <div class="fill" style="width:${pct}%"></div>
+                <div class="item-top">
+                    <div>
+                        <div class="rank">#${index + 1}</div>
+                        <div class="item-name">${item.item}</div>
+                    </div>
+                    <div class="score">AI Ranked</div>
                 </div>
-
-                <div class="small">${pct}% model score</div>
-                <div class="small">${item.reason || ""}</div>
+                <div class="reason">${item.reason || ""}</div>
             </div>
             `;
         });
@@ -379,7 +466,6 @@ async function predict(){
         document.getElementById("top3").innerHTML = html;
 
     }catch(err){
-
         document.getElementById("errorBox").innerHTML =
             `<div class="error">${err.message}</div>`;
     }
