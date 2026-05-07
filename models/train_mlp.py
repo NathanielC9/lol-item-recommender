@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import top_k_accuracy_score
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
-
 from preprocessing.encode import build_encoders, encode_row
 from models.mlp_model import MLP
 

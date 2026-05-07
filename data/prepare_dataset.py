@@ -3,6 +3,28 @@ import pandas as pd
 DATA = "data/"
 OUT = "data/decision_points.csv"
 
+LANE_ALIASES = {
+    "bot": "BOTTOM",
+    "bottom": "BOTTOM",
+    "adc": "BOTTOM",
+    "mid": "MIDDLE",
+    "middle": "MIDDLE",
+    "jg": "JUNGLE",
+    "jungle": "JUNGLE",
+    "top": "TOP",
+    "support": "SUPPORT",
+    "sup": "SUPPORT",
+}
+
+TIME_ALIASES = {
+    "early game": "early",
+    "early": "early",
+    "mid game": "mid",
+    "middle": "mid",
+    "mid": "mid",
+    "late game": "late",
+    "late": "late",
+}
 
 CONSUMABLES = {
     "Health Potion", "Refillable Potion", "Total Biscuit of Everlasting Will",

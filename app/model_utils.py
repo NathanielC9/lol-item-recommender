@@ -69,7 +69,9 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
 
     ranked_idx = np.argsort(probs)[::-1]
     candidates = []
+    used_items = set()
 
+    # First pass: use role-valid items and apply game-logic bonuses.
     for idx in ranked_idx[:top_n_pool]:
         item_id = classes[idx]
         item_name = get_item_name(item_id)
@@ -89,26 +91,38 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
             "adjusted_score": adjusted_score,
             "reason": explain_item(item_name, raw_row)
         })
-
-    if not candidates:
-        for idx in ranked_idx[:3]:
-            item_id = classes[idx]
-            item_name = get_item_name(item_id)
-
-            candidates.append({
-                "item_id": item_id,
-                "item": item_name,
-                "model_prob": float(probs[idx]),
-                "rule_bonus": 0.0,
-                "adjusted_score": float(probs[idx]),
-                "reason": explain_item(item_name, raw_row)
-            })
+        used_items.add(item_name)
 
     candidates = sorted(
         candidates,
         key=lambda x: x["adjusted_score"],
         reverse=True
     )
+
+    # Second pass: if fewer than 3 survived filtering, fill missing slots
+    # with the highest raw model predictions that have not already been used.
+    if len(candidates) < 3:
+        for idx in ranked_idx:
+            item_id = classes[idx]
+            item_name = get_item_name(item_id)
+
+            if item_name in used_items:
+                continue
+
+            model_prob = float(probs[idx])
+
+            candidates.append({
+                "item_id": item_id,
+                "item": item_name,
+                "model_prob": model_prob,
+                "rule_bonus": 0.0,
+                "adjusted_score": model_prob,
+                "reason": explain_item(item_name, raw_row)
+            })
+            used_items.add(item_name)
+
+            if len(candidates) >= 3:
+                break
 
     top3 = []
 
@@ -123,7 +137,6 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
 
     return top3
 
-
 def predict_next_item(pipeline, raw_row):
     encoders = pipeline["encoders"]
 
@@ -135,6 +148,9 @@ def predict_next_item(pipeline, raw_row):
     classes, probs = _load_model_predictions(pipeline, X)
 
     top3 = _rerank_items(classes, probs, raw_row)
+
+    if not top3:
+        raise ValueError("Model did not return any item recommendations.")
 
     prediction = top3[0]["item"]
 
