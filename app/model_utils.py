@@ -64,7 +64,7 @@ def _load_model_predictions(pipeline, X):
     return classes, probs
 
 
-def _rerank_items(classes, probs, raw_row, top_n_pool=200):
+def _rerank_items(classes, probs, raw_row, top_n_pool=200, limit=10):
     champion = raw_row.get("champion", "")
 
     ranked_idx = np.argsort(probs)[::-1]
@@ -99,9 +99,9 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
         reverse=True
     )
 
-    # Second pass: if fewer than 3 survived filtering, fill missing slots
+    # Second pass: if fewer than limit survived filtering, fill missing slots
     # with the highest raw model predictions that have not already been used.
-    if len(candidates) < 3:
+    if len(candidates) < limit:
         for idx in ranked_idx:
             item_id = classes[idx]
             item_name = get_item_name(item_id)
@@ -121,13 +121,13 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
             })
             used_items.add(item_name)
 
-            if len(candidates) >= 3:
+            if len(candidates) >= limit:
                 break
 
-    top3 = []
+    recommendations = []
 
-    for c in candidates[:3]:
-        top3.append({
+    for c in candidates[:limit]:
+        recommendations.append({
             "item": c["item"],
             "prob": round(c["model_prob"], 4),
             "adjusted_score": round(c["adjusted_score"], 4),
@@ -135,9 +135,9 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200):
             "reason": c["reason"]
         })
 
-    return top3
+    return recommendations
 
-def predict_next_item(pipeline, raw_row):
+def predict_next_item(pipeline, raw_row, limit=10):
     encoders = pipeline["encoders"]
 
     X = encode_row(raw_row, encoders)
@@ -147,11 +147,11 @@ def predict_next_item(pipeline, raw_row):
 
     classes, probs = _load_model_predictions(pipeline, X)
 
-    top3 = _rerank_items(classes, probs, raw_row)
+    recommendations = _rerank_items(classes, probs, raw_row, limit=limit)
 
-    if not top3:
+    if not recommendations:
         raise ValueError("Model did not return any item recommendations.")
 
-    prediction = top3[0]["item"]
+    prediction = recommendations[0]["item"]
 
-    return prediction, top3
+    return prediction, recommendations
