@@ -140,6 +140,23 @@ select:focus{
     background:#e0b95a;
 }
 
+.more-btn{
+    display:none;
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+    border-radius:9px;
+    border:1px solid #2b3850;
+    background:#101827;
+    color:#f1c96b;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.more-btn:hover{
+    background:#172238;
+}
+
 .results{
     display:none;
 }
@@ -196,6 +213,42 @@ select:focus{
     font-size:17px;
     font-weight:bold;
     color:#ffffff;
+}
+
+.item-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    position:relative;
+}
+
+.item-icon{
+    width:38px;
+    height:38px;
+    border-radius:6px;
+    border:1px solid #2b3850;
+    background:#070a11;
+    cursor:pointer;
+}
+
+/* Tooltip */
+.tooltip{
+    position:absolute;
+    bottom:120%;
+    left:0;
+    background:#111827;
+    border:1px solid #2b3850;
+    border-radius:8px;
+    padding:10px;
+    width:220px;
+    font-size:12px;
+    color:#e8edf5;
+    display:none;
+    z-index:10;
+}
+
+.item-title:hover .tooltip{
+    display:block;
 }
 
 .score{
@@ -396,6 +449,7 @@ select:focus{
 
                 <div class="panel-title">Top Recommendations</div>
                 <div class="recommendations" id="top3"></div>
+                <button class="more-btn" id="showMoreBtn" onclick="showMoreItems()">Show more items</button>
             </div>
         </div>
 
@@ -404,11 +458,84 @@ select:focus{
 </div>
 
 <script>
+let allRecommendations = [];
+let visibleRecommendationCount = 3;
+
+function renderRecommendations(){
+    const itemsToShow = allRecommendations.slice(0, visibleRecommendationCount);
+    const maxAdjustedScore = Math.max(
+        ...allRecommendations.map(item => item.adjusted_score || 0),
+        0
+    );
+
+    let html = "";
+
+    itemsToShow.forEach((item,index)=>{
+
+        const rawProb = item.prob || 0;
+        const modelPct = Math.max(1, Math.round(rawProb * 100));
+        const adjustedScore = item.adjusted_score || 0;
+        const strengthPct = maxAdjustedScore > 0
+            ? Math.max(1, Math.round((adjustedScore / maxAdjustedScore) * 100))
+            : 1;
+
+        html += `
+        <div class="item-card">
+            <div class="item-top">
+                <div>
+                    <div class="rank">#${index + 1}</div>
+                    <div class="item-title">
+                        <<div class="item-title">
+                            <img class="item-icon" src="${item.icon || ""}" onerror="this.style.display='none'">
+
+                            <div class="item-name">${item.item}</div>
+
+                            <div class="tooltip">
+                                <div><strong>${item.item}</strong></div>
+                                <div>${item.details?.description || "No description"}</div>
+                                <br>
+                                <div>Cost: ${item.details?.cost ?? "?"}</div>
+                                <div>Sell: ${item.details?.sell ?? "?"}</div>
+                                <div>Tags: ${(item.details?.tags || []).join(", ")}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="score-wrap">
+                    <div class="score">${strengthPct}% recommendation strength</div>
+                    <div class="confidence">${modelPct}% model confidence</div>
+                </div>
+            </div>
+            <div class="reason">${item.reason || ""}</div>
+        </div>
+        `;
+    });
+
+    document.getElementById("top3").innerHTML = html;
+
+    const showMoreBtn = document.getElementById("showMoreBtn");
+    if(allRecommendations.length > visibleRecommendationCount){
+        const remaining = allRecommendations.length - visibleRecommendationCount;
+        showMoreBtn.style.display = "block";
+        showMoreBtn.innerText = `Show ${remaining} more item${remaining === 1 ? "" : "s"}`;
+    }else{
+        showMoreBtn.style.display = "none";
+    }
+}
+
+function showMoreItems(){
+    visibleRecommendationCount = allRecommendations.length;
+    renderRecommendations();
+}
+
 async function predict(){
 
     document.getElementById("results").style.display = "none";
     document.getElementById("emptyState").style.display = "flex";
     document.getElementById("errorBox").innerHTML = "";
+    document.getElementById("showMoreBtn").style.display = "none";
+    allRecommendations = [];
+    visibleRecommendationCount = 3;
 
     const requiredIds = [
         "champion",
@@ -494,39 +621,9 @@ async function predict(){
         document.getElementById("results").style.display = "block";
         document.getElementById("bestItem").innerText = result.prediction;
 
-        let html = "";
-        const maxAdjustedScore = Math.max(
-            ...result.top3.map(item => item.adjusted_score || 0),
-            0
-        );
-
-        result.top3.forEach((item,index)=>{
-
-            const rawProb = item.prob || 0;
-            const modelPct = Math.max(1, Math.round(rawProb * 100));
-            const adjustedScore = item.adjusted_score || 0;
-            const strengthPct = maxAdjustedScore > 0
-                ? Math.max(1, Math.round((adjustedScore / maxAdjustedScore) * 100))
-                : 1;
-
-            html += `
-            <div class="item-card">
-                <div class="item-top">
-                    <div>
-                        <div class="rank">#${index + 1}</div>
-                        <div class="item-name">${item.item}</div>
-                    </div>
-                    <div class="score-wrap">
-                        <div class="score">${strengthPct}% recommendation strength</div>
-                        <div class="confidence">${modelPct}% model confidence</div>
-                    </div>
-                </div>
-                <div class="reason">${item.reason || ""}</div>
-            </div>
-            `;
-        });
-
-        document.getElementById("top3").innerHTML = html;
+        allRecommendations = result.recommendations || result.top3 || [];
+        visibleRecommendationCount = 3;
+        renderRecommendations();
 
     }catch(err){
         document.getElementById("errorBox").innerHTML =

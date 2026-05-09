@@ -148,7 +148,8 @@ def predict():
         }), 400
 
     try:
-        pred, top3 = predict_next_item(pipeline, clean_data)
+        pred, recommendations = predict_next_item(pipeline, clean_data, limit=10)
+        top3 = recommendations[:3]
 
         if len(top3) != 3:
             return jsonify({
@@ -159,6 +160,7 @@ def predict():
         return jsonify({
             "prediction": pred,
             "top3": top3,
+            "recommendations": recommendations,
             "input_state": clean_data
         })
     except Exception as e:
