@@ -22,6 +22,7 @@ def _load_ddragon_data():
 
 DDRAGON_VERSION, ITEM_DATA, CHAMPION_DATA = _load_ddragon_data()
 ITEM_NAMES = {item_id: data.get("name", f"Item {item_id}") for item_id, data in ITEM_DATA.items()}
+ITEM_NAME_TO_ID = {name: item_id for item_id, name in ITEM_NAMES.items()}
 CHAMPION_NAME_TO_ID = {
     data.get("name", champ_id): champ_id
     for champ_id, data in CHAMPION_DATA.items()
@@ -69,10 +70,16 @@ def get_item_name(item_id):
 
 def get_item_icon_url(item_id):
     item_id = str(item_id)
-    if not item_id.isdigit():
-        return ""
-    return f"{DDRAGON_BASE}/cdn/{DDRAGON_VERSION}/img/item/{item_id}.png"
 
+    if item_id.isdigit():
+        return f"{DDRAGON_BASE}/cdn/{DDRAGON_VERSION}/img/item/{item_id}.png"
+
+    riot_id = ITEM_NAME_TO_ID.get(item_id)
+
+    if riot_id:
+        return f"{DDRAGON_BASE}/cdn/{DDRAGON_VERSION}/img/item/{riot_id}.png"
+
+    return ""
 
 def get_item_details(item_id):
     item_id = str(item_id)
