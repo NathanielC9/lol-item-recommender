@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from preprocessing.encode import load_encoders, encode_row
-from utils.item_names import get_item_name, get_item_icon_url
+from utils.item_names import get_item_name, get_item_icon_url, get_item_details
 from utils.game_logic import (
     is_valid_item_for_role,
     item_bonus,
@@ -87,6 +87,7 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200, limit=10):
             "item_id": item_id,
             "item": item_name,
             "icon": get_item_icon_url(item_id),
+            "details": get_item_details(item_id),
             "model_prob": model_prob,
             "rule_bonus": bonus,
             "adjusted_score": adjusted_score,
@@ -116,6 +117,7 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200, limit=10):
                 "item_id": item_id,
                 "item": item_name,
                 "icon": get_item_icon_url(item_id),
+                "details": get_item_details(item_id),
                 "model_prob": model_prob,
                 "rule_bonus": 0.0,
                 "adjusted_score": model_prob,
@@ -132,6 +134,7 @@ def _rerank_items(classes, probs, raw_row, top_n_pool=200, limit=10):
         recommendations.append({
             "item": c["item"],
             "icon": c.get("icon", ""),
+            "details": c.get("details", {}),
             "prob": round(c["model_prob"], 4),
             "adjusted_score": round(c["adjusted_score"], 4),
             "rule_bonus": round(c["rule_bonus"], 4),

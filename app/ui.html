@@ -219,6 +219,7 @@ select:focus{
     display:flex;
     align-items:center;
     gap:10px;
+    position:relative;
 }
 
 .item-icon{
@@ -227,6 +228,27 @@ select:focus{
     border-radius:6px;
     border:1px solid #2b3850;
     background:#070a11;
+    cursor:pointer;
+}
+
+/* Tooltip */
+.tooltip{
+    position:absolute;
+    bottom:120%;
+    left:0;
+    background:#111827;
+    border:1px solid #2b3850;
+    border-radius:8px;
+    padding:10px;
+    width:220px;
+    font-size:12px;
+    color:#e8edf5;
+    display:none;
+    z-index:10;
+}
+
+.item-title:hover .tooltip{
+    display:block;
 }
 
 .score{
@@ -463,8 +485,20 @@ function renderRecommendations(){
                 <div>
                     <div class="rank">#${index + 1}</div>
                     <div class="item-title">
-                        <img class="item-icon" src="${item.icon || ""}" onerror="this.style.display='none'">
-                        <div class="item-name">${item.item}</div>
+                        <<div class="item-title">
+                            <img class="item-icon" src="${item.icon || ""}" onerror="this.style.display='none'">
+
+                            <div class="item-name">${item.item}</div>
+
+                            <div class="tooltip">
+                                <div><strong>${item.item}</strong></div>
+                                <div>${item.details?.description || "No description"}</div>
+                                <br>
+                                <div>Cost: ${item.details?.cost ?? "?"}</div>
+                                <div>Sell: ${item.details?.sell ?? "?"}</div>
+                                <div>Tags: ${(item.details?.tags || []).join(", ")}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="score-wrap">

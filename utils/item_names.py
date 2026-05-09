@@ -83,6 +83,11 @@ def get_item_icon_url(item_id):
 
 def get_item_details(item_id):
     item_id = str(item_id)
+
+    # Convert name → ID if needed
+    if not item_id.isdigit():
+        item_id = ITEM_NAME_TO_ID.get(item_id, item_id)
+
     data = ITEM_DATA.get(item_id, {})
 
     gold = data.get("gold", {})
